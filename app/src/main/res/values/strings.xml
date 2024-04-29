@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">AI Chat</string>
+    <string name="user_query">How to write a cost function</string>
+    <string name="gpt_response">This is a simple cost function commonly used in regression problems called Mean Squared Error (MSE). It calculates the squared difference between predicted values and true target values and then averages them to get the overall cost.
+
+Depending on the problem you\'re working on (e.g., classification, regression, reinforcement learning), the cost function might vary. For instance, in classification problems, you might use cross-entropy loss, while in reinforcement learning, you might use a reward function tailored to your specific task.</string>
+</resources>
