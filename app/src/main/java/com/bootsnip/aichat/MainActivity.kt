@@ -3,14 +3,31 @@ package com.bootsnip.aichat
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import com.bootsnip.aichat.ui.screens.HomeScreen
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.bootsnip.aichat.model.Quote
 import com.bootsnip.aichat.ui.theme.AIChatTheme
+import com.bootsnip.aichat.viewmodel.AiViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private val viewModel by viewModels<AiViewModel>()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -20,9 +37,28 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    HomeScreen()
+                    //HomeScreen()
+
+                    val quoteItems by viewModel.items.collectAsStateWithLifecycle()
+
+                    LaunchedEffect(key1 = Unit, block = {
+                        viewModel.loadItems()
+                    })
+
+                    LazyColumn(verticalArrangement = Arrangement.SpaceBetween, content = {
+                        items(quoteItems) {
+                            QuoteItem(item = it)
+                        }
+                    })
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun QuoteItem(item: Quote) {
+    Box(modifier = Modifier.padding(16.dp)) {
+        Text(text = item.content)
     }
 }
