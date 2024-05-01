@@ -31,9 +31,9 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.core.Role
 import com.bootsnip.aichat.R
-import com.bootsnip.aichat.model.ChatMessageData
 import com.bootsnip.aichat.ui.components.AiChatBox
 import com.bootsnip.aichat.ui.components.UserChatBox
 import com.bootsnip.aichat.viewmodel.AiViewModel
@@ -43,7 +43,6 @@ import com.bootsnip.aichat.viewmodel.AiViewModel
 fun HomeScreen(
     viewModel: AiViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
     val gptChatList = viewModel.chatList.collectAsStateWithLifecycle().value
 
     ConstraintLayout(Modifier.fillMaxSize()) {
@@ -61,10 +60,10 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(10.dp))
                 when(it.role) {
                     Role("user") -> {
-                        UserChatBox(it.message)
+                        UserChatBox(it.content.orEmpty())
                     }
                     Role("assistant") -> {
-                        AiChatBox(it.message)
+                        AiChatBox(it.content.orEmpty())
                     }
                     else -> {}
                 }
@@ -101,12 +100,6 @@ fun HomeScreen(
 
             Button(
                 onClick = {
-                    val newList = viewModel.chatList.value.toMutableList()
-                    viewModel.chatList.value = newList.apply {
-                        this.add(
-                            ChatMessageData(Role("user"), prompt)
-                        )
-                    }.toMutableList()
                     viewModel.getGPTResponse(prompt)
                     prompt = ""
                 },
