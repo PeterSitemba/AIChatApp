@@ -1,6 +1,7 @@
 package com.bootsnip.aichat.repo
 
 import com.aallam.openai.api.chat.ChatCompletion
+import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.client.OpenAI
 import com.bootsnip.aichat.service.IApiService
 import com.bootsnip.aichat.util.Key.KEY
@@ -15,7 +16,7 @@ class AiRepo @Inject constructor(
 
     private val openAI = OpenAI(KEY)
 
-    override suspend fun gtpChatResponse(query: String): ChatCompletion =
+    override suspend fun gtpChatResponse(query: List<ChatMessage>): ChatCompletion =
         withContext(ioDispatcher) {
             openAI.chatCompletion(service.getGPTResponse(query))
         }

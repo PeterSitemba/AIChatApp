@@ -4,7 +4,8 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.bootsnip.aichat.model.ChatMessageData
+import com.aallam.openai.api.chat.ChatMessage
+import com.aallam.openai.api.chat.ChatRole
 import com.bootsnip.aichat.repo.IAiRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,21 +18,28 @@ class AiViewModel @Inject constructor(
     application: Application
 ) : AndroidViewModel(application) {
 
-    val chatList: MutableStateFlow<MutableList<ChatMessageData>> = MutableStateFlow(mutableListOf())
+    val chatList: MutableStateFlow<MutableList<ChatMessage>> = MutableStateFlow(mutableListOf())
 
-    fun getGPTResponse(gtpQuery: String) {
+    fun getGPTResponse(gptQuery: String) {
         viewModelScope.launch {
             try {
-                val response = repo.gtpChatResponse(gtpQuery)
+                val newQueryList = chatList.value.toMutableList()
+                chatList.value = newQueryList.apply {
+                    this.add(
+                        ChatMessage(ChatRole.User, gptQuery)
+                    )
+                }
+
+                val response = repo.gtpChatResponse(newQueryList.toList())
                 val message = response.choices.first().message.content.orEmpty()
                 val role = response.choices.first().message.role
 
-                val newList = chatList.value.toMutableList()
-                chatList.value = newList.apply {
+                val newResponseList = chatList.value.toMutableList()
+                chatList.value = newResponseList.apply {
                     this.add(
-                        ChatMessageData(role, message)
+                        ChatMessage(role, message)
                     )
-                }.toMutableList()
+                }
 
                 Log.d("GPT RESPONSE", message)
 

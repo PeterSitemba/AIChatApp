@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -18,9 +19,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,41 +34,54 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.core.Role
 import com.bootsnip.aichat.R
-import com.bootsnip.aichat.model.ChatMessageData
 import com.bootsnip.aichat.ui.components.AiChatBox
 import com.bootsnip.aichat.ui.components.UserChatBox
 import com.bootsnip.aichat.viewmodel.AiViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: AiViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
     val gptChatList = viewModel.chatList.collectAsStateWithLifecycle().value
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(gptChatList.size) {
+        if(gptChatList.size > 0){
+            listState.animateScrollToItem(gptChatList.size - 1)
+        }
+    }
 
     ConstraintLayout(Modifier.fillMaxSize()) {
         val (chatArea, inputField) = createRefs()
         var prompt by remember { mutableStateOf("") }
 
         LazyColumn(
+            state = listState,
             modifier = Modifier
+                .fillMaxWidth()
                 .constrainAs(chatArea) {
                     top.linkTo(parent.top)
-                    start.linkTo(parent.start)
-                }.padding(16.dp)
+                    bottom.linkTo(inputField.top)
+                    height = Dimension.fillToConstraints
+                }
+                .padding(16.dp)
         ) {
             items(gptChatList) {
                 Spacer(modifier = Modifier.height(10.dp))
-                when(it.role) {
+                when (it.role) {
                     Role("user") -> {
-                        UserChatBox(it.message)
+                        UserChatBox(it.content.orEmpty())
                     }
+
                     Role("assistant") -> {
-                        AiChatBox(it.message)
+                        AiChatBox(it.content.orEmpty())
                     }
+
                     else -> {}
                 }
             }
@@ -101,12 +117,6 @@ fun HomeScreen(
 
             Button(
                 onClick = {
-                    val newList = viewModel.chatList.value.toMutableList()
-                    viewModel.chatList.value = newList.apply {
-                        this.add(
-                            ChatMessageData(Role("user"), prompt)
-                        )
-                    }.toMutableList()
                     viewModel.getGPTResponse(prompt)
                     prompt = ""
                 },
