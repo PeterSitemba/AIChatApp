@@ -29,7 +29,6 @@ interface AiModule {
         fun provideHttpClient(): HttpClient {
             return httpClientAndroid
         }
-
         @Provides
         fun providesIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
     }
