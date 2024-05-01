@@ -1,25 +1,22 @@
 package com.bootsnip.aichat.repo
 
-import com.bootsnip.aichat.model.QuotesResults
+import com.aallam.openai.api.chat.ChatCompletion
+import com.aallam.openai.client.OpenAI
 import com.bootsnip.aichat.service.IApiService
-import io.ktor.client.call.body
+import com.bootsnip.aichat.util.Key.KEY
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
-import javax.inject.Named
-import kotlin.coroutines.CoroutineContext
 
 class AiRepo @Inject constructor(
     private val service: IApiService,
     private val ioDispatcher: CoroutineDispatcher
-): IAiRepo {
-    override suspend fun getQuotes(): Result<QuotesResults> =
-        withContext(ioDispatcher) {
-            try {
-                Result.success(service.getQuotes().body())
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
+) : IAiRepo {
 
+    private val openAI = OpenAI(KEY)
+
+    override suspend fun gtpChatResponse(query: String): ChatCompletion =
+        withContext(ioDispatcher) {
+            openAI.chatCompletion(service.getGPTResponse(query))
+        }
 }

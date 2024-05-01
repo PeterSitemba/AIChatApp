@@ -1,7 +1,7 @@
 package com.bootsnip.aichat.repo
 
-import com.bootsnip.aichat.model.QuotesResults
+import com.aallam.openai.api.chat.ChatCompletion
 
 interface IAiRepo {
-    suspend fun getQuotes() : Result<QuotesResults>
+    suspend fun gtpChatResponse(query: String) : ChatCompletion
 }

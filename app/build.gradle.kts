@@ -89,9 +89,15 @@ dependencies {
     //hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    implementation(libs.hilt.navigation.compose)
 
     //lifecycle
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+
+    //open-ai
+    val openAiBom = platform(libs.open.api.bom)
+    implementation(openAiBom)
+    implementation(libs.open.api.client)
 }
