@@ -17,7 +17,7 @@ fun AiChatBox(
         AiAvatar()
         Spacer(modifier = Modifier.width(5.dp))
         Column {
-            Text(text = "AI APP")
+            Text(text = "Astra")
             Text(text = response)
         }
     }

@@ -9,6 +9,7 @@ import com.aallam.openai.api.chat.ChatRole
 import com.bootsnip.aichat.repo.IAiRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -20,7 +21,11 @@ class AiViewModel @Inject constructor(
 
     val chatList: MutableStateFlow<MutableList<ChatMessage>> = MutableStateFlow(mutableListOf())
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading.asStateFlow()
+
     fun getGPTResponse(gptQuery: String) {
+        _isLoading.value = true
         viewModelScope.launch {
             try {
                 val newQueryList = chatList.value.toMutableList()
@@ -42,9 +47,11 @@ class AiViewModel @Inject constructor(
                 }
 
                 Log.d("GPT RESPONSE", message)
+                _isLoading.value = false
 
             } catch (e: Exception) {
                 //Handle error scenario
+                _isLoading.value = false
             }
         }
     }

@@ -1,7 +1,11 @@
 package com.bootsnip.aichat.ui.screens
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -12,35 +16,39 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.core.Role
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.components.AiChatBox
+import com.bootsnip.aichat.ui.components.DotsLoadingIndicator
 import com.bootsnip.aichat.ui.components.UserChatBox
 import com.bootsnip.aichat.viewmodel.AiViewModel
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,13 +56,16 @@ fun HomeScreen(
     viewModel: AiViewModel = hiltViewModel()
 ) {
     val gptChatList = viewModel.chatList.collectAsStateWithLifecycle().value
+    val isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value
     val listState = rememberLazyListState()
+    val interactionSource = remember { MutableInteractionSource() }
 
     LaunchedEffect(gptChatList.size) {
-        if(gptChatList.size > 0){
+        if (gptChatList.size > 0) {
             listState.animateScrollToItem(gptChatList.size - 1)
         }
     }
+
 
     ConstraintLayout(Modifier.fillMaxSize()) {
         val (chatArea, inputField) = createRefs()
@@ -62,14 +73,13 @@ fun HomeScreen(
 
         LazyColumn(
             state = listState,
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 8.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .constrainAs(chatArea) {
-                    top.linkTo(parent.top)
-                    bottom.linkTo(inputField.top)
+                    linkTo(parent.top, inputField.top, bias = 0F)
                     height = Dimension.fillToConstraints
                 }
-                .padding(16.dp)
         ) {
             items(gptChatList) {
                 Spacer(modifier = Modifier.height(10.dp))
@@ -85,62 +95,102 @@ fun HomeScreen(
                     else -> {}
                 }
             }
+
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    contentAlignment = Alignment.Center
+                )
+                {
+                    if (isLoading) {
+                        DotsLoadingIndicator()
+                    }
+                }
+            }
+
         }
 
         ConstraintLayout(
             modifier = Modifier
                 .constrainAs(inputField) {
-                    bottom.linkTo(parent.bottom, margin = 16.dp)
+                    linkTo(chatArea.bottom, parent.bottom, bottomMargin = 16.dp, bias = 1F)
+                    //bottom.linkTo(parent.bottom, margin = 16.dp)
                 }
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp)
         ) {
-            val (textbox, sendButton) = createRefs()
+            val (textBox, sendButton) = createRefs()
+            val localStyle = LocalTextStyle.current
+            val mergedStyle = localStyle.merge(TextStyle(color = LocalContentColor.current))
 
-            TextField(
-                modifier = Modifier.constrainAs(textbox) {
-                    start.linkTo(parent.start)
-                    end.linkTo(sendButton.start)
-                    width = Dimension.fillToConstraints
-                },
+            BasicTextField(
+                textStyle = mergedStyle,
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                maxLines = 6,
                 value = prompt,
                 onValueChange = { prompt = it },
-                placeholder = { Text("Message") },
-                shape = RoundedCornerShape(20.dp),
-                colors = TextFieldDefaults.textFieldColors(
-                    disabledTextColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent
+                modifier = Modifier
+                    .defaultMinSize(minHeight = 45.dp)
+                    .constrainAs(textBox) {
+                        start.linkTo(parent.start)
+                        end.linkTo(sendButton.start)
+                        width = Dimension.fillToConstraints
+                    },
+                visualTransformation = VisualTransformation.None,
+                interactionSource = interactionSource,
+                enabled = true,
+                singleLine = false
+            ) { innerTextField ->
+                TextFieldDefaults.DecorationBox(
+                    value = prompt,
+                    visualTransformation = VisualTransformation.None,
+                    innerTextField = innerTextField,
+                    singleLine = false,
+                    enabled = true,
+                    shape = RoundedCornerShape(20.dp),
+                    placeholder = { Text("Message") },
+                    interactionSource = interactionSource,
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        top = 8.dp,
+                        bottom = 8.dp,
+                        end = 16.dp
+                    ),
+                    colors = TextFieldDefaults.colors(
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
                 )
-            )
+            }
 
-            Button(
+            ElevatedButton(
                 onClick = {
                     viewModel.getGPTResponse(prompt)
                     prompt = ""
                 },
                 shape = CircleShape,
                 modifier = Modifier
-                    .padding(8.dp)
                     .constrainAs(sendButton) {
                         end.linkTo(parent.end)
-                    },
+                        bottom.linkTo(parent.bottom)
+                    }
+                    .padding(start = 8.dp)
+                    .size(45.dp),
                 colors = ButtonColors(
-                    contentColor = Color.Black,
-                    containerColor = Color.White,
-                    disabledContainerColor = Color.White,
+                    contentColor = Color.Gray,
+                    containerColor = Color.LightGray,
+                    disabledContainerColor = Color.LightGray,
                     disabledContentColor = Color.Gray
-                )
+                ),
+                contentPadding = PaddingValues(0.dp)
             ) {
                 Image(
-                    modifier = Modifier.size(30.dp),
-                    painter = painterResource(id = R.drawable.send),
+                    painter = painterResource(id = R.drawable.send_variant),
                     contentDescription = "send_button"
                 )
             }
         }
-
-
     }
 }

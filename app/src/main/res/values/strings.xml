@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">AI Chat</string>
+    <string name="app_name">Astra AI</string>
     <string name="user_query">How to write a cost function</string>
     <string name="gpt_response">This is a simple cost function commonly used in regression problems called Mean Squared Error (MSE). It calculates the squared difference between predicted values and true target values and then averages them to get the overall cost.
 

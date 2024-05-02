@@ -1,7 +1,9 @@
 package com.bootsnip.aichat.repo
 
+import android.util.Log
 import com.aallam.openai.api.chat.ChatCompletion
 import com.aallam.openai.api.chat.ChatMessage
+import com.aallam.openai.api.chat.ChatRole
 import com.aallam.openai.client.OpenAI
 import com.bootsnip.aichat.service.IApiService
 import com.bootsnip.aichat.util.Key.KEY
@@ -18,6 +20,16 @@ class AiRepo @Inject constructor(
 
     override suspend fun gtpChatResponse(query: List<ChatMessage>): ChatCompletion =
         withContext(ioDispatcher) {
-            openAI.chatCompletion(service.getGPTResponse(query))
+            val completeQuery: MutableList<ChatMessage> = mutableListOf()
+            completeQuery.add(
+                ChatMessage(
+                    role = ChatRole.System,
+                    name = "Astra",
+                    content = "You are a helpful assistant!"
+                )
+            )
+            completeQuery.addAll(query)
+
+            openAI.chatCompletion(service.getGPTResponse(completeQuery.toList()))
         }
 }
