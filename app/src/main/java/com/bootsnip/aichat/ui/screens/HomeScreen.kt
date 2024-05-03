@@ -46,7 +46,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aallam.openai.api.core.Role
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.components.AiChatBox
+import com.bootsnip.aichat.ui.components.AstraSuggestionsDialog
 import com.bootsnip.aichat.ui.components.DotsLoadingIndicator
+import com.bootsnip.aichat.ui.components.HomePlaceholder
 import com.bootsnip.aichat.ui.components.UserChatBox
 import com.bootsnip.aichat.viewmodel.AiViewModel
 
@@ -59,6 +61,9 @@ fun HomeScreen(
     val isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value
     val listState = rememberLazyListState()
     val interactionSource = remember { MutableInteractionSource() }
+    var showSuggestionDialog by remember {
+        mutableStateOf(false)
+    }
 
     LaunchedEffect(gptChatList.size) {
         if (gptChatList.size > 0) {
@@ -66,48 +71,70 @@ fun HomeScreen(
         }
     }
 
+    if(showSuggestionDialog){
+        AstraSuggestionsDialog(
+            showSuggestionDialog = {
+                showSuggestionDialog = it
+            },
+            onSuggestionClicked = {
+                viewModel.getGPTResponse(it)
+            }
+        )
+    }
 
     ConstraintLayout(Modifier.fillMaxSize()) {
-        val (chatArea, inputField) = createRefs()
+        val (chatArea, inputField, placeholder) = createRefs()
         var prompt by remember { mutableStateOf("") }
 
-        LazyColumn(
-            state = listState,
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 8.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .constrainAs(chatArea) {
-                    linkTo(parent.top, inputField.top, bias = 0F)
-                    height = Dimension.fillToConstraints
-                }
-        ) {
-            items(gptChatList) {
-                Spacer(modifier = Modifier.height(10.dp))
-                when (it.role) {
-                    Role("user") -> {
-                        UserChatBox(it.content.orEmpty())
-                    }
-
-                    Role("assistant") -> {
-                        AiChatBox(it.content.orEmpty())
-                    }
-
-                    else -> {}
-                }
+        if (gptChatList.isEmpty()) {
+            HomePlaceholder(poweredBy = "Chat GPT", modifier = Modifier.constrainAs(placeholder) {
+                top.linkTo(parent.top)
+                bottom.linkTo(inputField.top)
+                start.linkTo(parent.start)
+                end.linkTo(parent.end)
+            }) {
+                showSuggestionDialog = true
             }
+        } else {
+            LazyColumn(
+                state = listState,
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .constrainAs(chatArea) {
+                        linkTo(parent.top, inputField.top, bias = 0F)
+                        height = Dimension.fillToConstraints
+                    }
+            ) {
+                items(gptChatList) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    when (it.role) {
+                        Role("user") -> {
+                            UserChatBox(it.content.orEmpty())
+                        }
 
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 12.dp),
-                    contentAlignment = Alignment.Center
-                )
-                {
-                    if (isLoading) {
-                        DotsLoadingIndicator()
+                        Role("assistant") -> {
+                            AiChatBox(it.content.orEmpty())
+                        }
+
+                        else -> {}
                     }
                 }
+
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp),
+                        contentAlignment = Alignment.Center
+                    )
+                    {
+                        if (isLoading) {
+                            DotsLoadingIndicator()
+                        }
+                    }
+                }
+
             }
 
         }
@@ -116,7 +143,6 @@ fun HomeScreen(
             modifier = Modifier
                 .constrainAs(inputField) {
                     linkTo(chatArea.bottom, parent.bottom, bottomMargin = 16.dp, bias = 1F)
-                    //bottom.linkTo(parent.bottom, margin = 16.dp)
                 }
                 .fillMaxWidth()
                 .padding(start = 16.dp, end = 16.dp)
@@ -150,7 +176,7 @@ fun HomeScreen(
                     singleLine = false,
                     enabled = true,
                     shape = RoundedCornerShape(20.dp),
-                    placeholder = { Text("Message") },
+                    placeholder = { Text("Type here...") },
                     interactionSource = interactionSource,
                     contentPadding = PaddingValues(
                         start = 16.dp,
