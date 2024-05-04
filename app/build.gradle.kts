@@ -100,4 +100,14 @@ dependencies {
     val openAiBom = platform(libs.open.api.bom)
     implementation(openAiBom)
     implementation(libs.open.api.client)
+
+    //room
+    implementation(libs.room.runtime)
+    annotationProcessor(libs.room.compiler)
+    ksp(libs.room.compiler)
+    implementation(libs.room.ktx)
+    implementation(libs.room.paging)
+
+    //gson
+    implementation(libs.gson)
 }

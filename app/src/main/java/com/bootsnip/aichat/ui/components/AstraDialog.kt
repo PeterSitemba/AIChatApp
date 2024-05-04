@@ -36,7 +36,7 @@ fun AstraSuggestionsDialog(
 ) {
     Dialog(onDismissRequest = { showSuggestionDialog(false) }) {
         Surface(
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.background
         ) {
             LazyColumn(modifier = Modifier.padding(16.dp)) {

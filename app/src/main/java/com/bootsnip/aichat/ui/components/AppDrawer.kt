@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
@@ -61,7 +60,7 @@ fun AppDrawer(
 
         NavigationDrawerItem(
             label = { Text(text = "Chat History", style = MaterialTheme.typography.labelSmall) },
-            selected = route == AllDestinations.SETTINGS,
+            selected = route == AllDestinations.CHAT_HISTORY,
             onClick = {
                 navigateToSettings()
                 closeDrawer()

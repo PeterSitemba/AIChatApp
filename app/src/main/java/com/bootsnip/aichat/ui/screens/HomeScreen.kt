@@ -41,7 +41,6 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aallam.openai.api.core.Role
 import com.bootsnip.aichat.R
@@ -55,7 +54,7 @@ import com.bootsnip.aichat.viewmodel.AiViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    viewModel: AiViewModel = hiltViewModel()
+    viewModel: AiViewModel
 ) {
     val gptChatList = viewModel.chatList.collectAsStateWithLifecycle().value
     val isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value
