@@ -1,5 +1,6 @@
 package com.bootsnip.aichat.navigation
 
+import android.content.Intent
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -22,7 +23,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -33,8 +36,8 @@ import androidx.navigation.compose.rememberNavController
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.db.ChatHistory
 import com.bootsnip.aichat.model.AstraChatMessage
+import com.bootsnip.aichat.ui.activities.ChatHistoryActivity
 import com.bootsnip.aichat.ui.components.AppDrawer
-import com.bootsnip.aichat.ui.screens.ChatHistoryScreen
 import com.bootsnip.aichat.ui.screens.HomeScreen
 import com.bootsnip.aichat.util.AssistantType.GPT35TURBO
 import com.bootsnip.aichat.viewmodel.AiViewModel
@@ -62,20 +65,37 @@ fun AstraNavGraph(
             chatMessage.content
         )
     }
+    val context = LocalContext.current
 
-    ModalNavigationDrawer(drawerContent = {
-        AppDrawer(
-            route = currentRoute,
-            navigateToHome = { navigationActions.navigateToHome() },
-            navigateToSettings = { navigationActions.navigateToSettings() },
-            closeDrawer = { coroutineScope.launch { drawerState.close() } },
-            modifier = Modifier
-        )
-    }, drawerState = drawerState) {
+    ModalNavigationDrawer(
+        drawerContent = {
+            AppDrawer(
+                route = currentRoute,
+                navigateToHome = { navigationActions.navigateToHome() },
+                navigateToChatHistory = {
+                    context.startActivity(
+                        Intent(
+                            context,
+                            ChatHistoryActivity::class.java
+                        )
+                    )
+                },
+                closeDrawer = { coroutineScope.launch { drawerState.close() } },
+                modifier = Modifier
+            )
+        }, drawerState = drawerState,
+        gesturesEnabled = currentRoute == AllDestinations.HOME
+
+    ) {
         Scaffold(
             topBar = {
                 CenterAlignedTopAppBar(
-                    title = { Text(text = stringResource(id = R.string.app_name)) },
+                    title = {
+                        Text(
+                            text = stringResource(id = R.string.app_name),
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     navigationIcon = {
                         IconButton(onClick = {
@@ -118,12 +138,6 @@ fun AstraNavGraph(
 
                 composable(AllDestinations.HOME) {
                     HomeScreen(
-                        viewModel
-                    )
-                }
-
-                composable(AllDestinations.CHAT_HISTORY) {
-                    ChatHistoryScreen(
                         viewModel
                     )
                 }

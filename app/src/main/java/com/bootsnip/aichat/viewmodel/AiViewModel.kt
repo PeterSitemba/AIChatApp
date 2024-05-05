@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.chat.ChatRole
 import com.bootsnip.aichat.db.ChatHistory
+import com.bootsnip.aichat.db.ChatHistoryUpdateFav
 import com.bootsnip.aichat.repo.IAiRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -84,6 +85,12 @@ class AiViewModel @Inject constructor(
             repo.getAllFavChatHistory().collectLatest {
                 _favChatHistory.value = it
             }
+        }
+    }
+
+    fun updateChatHistoryStatus(chatHistoryUpdateFav: ChatHistoryUpdateFav) {
+        viewModelScope.launch {
+            repo.updateChatHistoryFavStatus(chatHistoryUpdateFav)
         }
     }
 

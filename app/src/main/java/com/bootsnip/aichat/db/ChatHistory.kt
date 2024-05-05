@@ -19,6 +19,6 @@ data class ChatHistory(
 )
 
 data class ChatHistoryUpdateFav(
-    val id: Int,
+    val uid: Int,
     val fav : Int
 )

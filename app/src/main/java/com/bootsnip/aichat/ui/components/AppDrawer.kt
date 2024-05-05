@@ -36,7 +36,7 @@ fun AppDrawer(
     route: String,
     modifier: Modifier = Modifier,
     navigateToHome: () -> Unit = {},
-    navigateToSettings: () -> Unit = {},
+    navigateToChatHistory: () -> Unit = {},
     closeDrawer: () -> Unit = {}
 ) {
     ModalDrawerSheet(modifier = Modifier.requiredWidth(250.dp)) {
@@ -62,8 +62,7 @@ fun AppDrawer(
             label = { Text(text = "Chat History", style = MaterialTheme.typography.labelSmall) },
             selected = route == AllDestinations.CHAT_HISTORY,
             onClick = {
-                navigateToSettings()
-                closeDrawer()
+                navigateToChatHistory()
             },
             icon = { Icon(painterResource(id = R.drawable.chat), contentDescription = null) },
             shape = MaterialTheme.shapes.small

@@ -6,6 +6,7 @@ import com.aallam.openai.api.chat.ChatRole
 import com.aallam.openai.client.OpenAI
 import com.bootsnip.aichat.db.ChatHistory
 import com.bootsnip.aichat.db.ChatHistoryDao
+import com.bootsnip.aichat.db.ChatHistoryUpdateFav
 import com.bootsnip.aichat.service.IApiService
 import com.bootsnip.aichat.util.Key.KEY
 import kotlinx.coroutines.CoroutineDispatcher
@@ -41,6 +42,11 @@ class AiRepo @Inject constructor(
 
     override fun getAllChatHistory() = chatHistoryDao.getAllChatHistoryDistinct()
     override fun getAllFavChatHistory() = chatHistoryDao.getAllFavChatHistoryDistinct()
+    override suspend fun updateChatHistoryFavStatus(chatHistoryUpdateFav: ChatHistoryUpdateFav) {
+        withContext(ioDispatcher){
+            chatHistoryDao.updateChatHistoryFavStatus(chatHistoryUpdateFav)
+        }
+    }
 
     override suspend fun insertChatHistory(chatHistory: ChatHistory) {
         withContext(ioDispatcher){
