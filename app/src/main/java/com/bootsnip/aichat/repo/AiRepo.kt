@@ -11,7 +11,6 @@ import com.bootsnip.aichat.db.ChatHistoryUpdateFav
 import com.bootsnip.aichat.service.IApiService
 import com.bootsnip.aichat.util.Key.KEY
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
