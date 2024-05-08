@@ -110,4 +110,7 @@ dependencies {
 
     //gson
     implementation(libs.gson)
+
+    //compose navigation
+    implementation(libs.androidx.compose.navigation)
 }

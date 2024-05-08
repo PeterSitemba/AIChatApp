@@ -22,3 +22,10 @@ data class ChatHistoryUpdateFav(
     val uid: Int,
     val fav : Int
 )
+
+data class ChatHistoryUpdate(
+    val uid: Int?,
+    @TypeConverters(Converter::class)
+    @ColumnInfo("chat_message_list")
+    val chatMessageList: List<AstraChatMessage>?
+)

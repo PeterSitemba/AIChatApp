@@ -1,6 +1,8 @@
 package com.bootsnip.aichat.navigation
 
 import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -27,23 +29,21 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.bootsnip.aichat.R
-import com.bootsnip.aichat.db.ChatHistory
-import com.bootsnip.aichat.model.AstraChatMessage
 import com.bootsnip.aichat.ui.activities.ChatHistoryActivity
 import com.bootsnip.aichat.ui.components.AppDrawer
 import com.bootsnip.aichat.ui.screens.HomeScreen
-import com.bootsnip.aichat.util.AssistantType.GPT35TURBO
 import com.bootsnip.aichat.viewmodel.AiViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+const val CLOSE_DRAWER = "close_drawer"
+const val UID = "uid"
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AstraNavGraph(
@@ -59,13 +59,15 @@ fun AstraNavGraph(
     val navigationActions = remember(navController) {
         AppNavigationActions(navController)
     }
-    val chatList = viewModel.chatList.collectAsStateWithLifecycle().value.map { chatMessage ->
-        AstraChatMessage(
-            chatMessage.role,
-            chatMessage.content
-        )
-    }
     val context = LocalContext.current
+    val activityResultLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) {
+        val closeDrawer = it.data?.getBooleanExtra(CLOSE_DRAWER, false)
+        val uid = it.data?.getIntExtra(UID, 0)
+        if((closeDrawer != null) && closeDrawer && uid != null){
+            coroutineScope.launch { drawerState.close() }
+            viewModel.continueChat(uid)
+        }
+    }
 
     ModalNavigationDrawer(
         drawerContent = {
@@ -73,7 +75,7 @@ fun AstraNavGraph(
                 route = currentRoute,
                 navigateToHome = { navigationActions.navigateToHome() },
                 navigateToChatHistory = {
-                    context.startActivity(
+                    activityResultLauncher.launch(
                         Intent(
                             context,
                             ChatHistoryActivity::class.java
@@ -111,19 +113,12 @@ fun AstraNavGraph(
                     ),
                     actions = {
                         IconButton(onClick = {
-                            val chatHistory = ChatHistory(
-                                assistantType = GPT35TURBO.assistantType,
-                                chatMessageList = chatList,
-                                fav = 0
-                            )
-                            if (chatList.size > 1) {
-                                viewModel.insertChatHistory(chatHistory)
-                            }
-                            viewModel.chatList.value = mutableListOf()
+                            viewModel.startNewChat()
                         }) {
                             Icon(
                                 imageVector = Icons.Filled.AddCircle,
-                                contentDescription = "Localized description"
+                                contentDescription = "Localized description",
+                                tint = MaterialTheme.colorScheme.secondary
                             )
                         }
                     }

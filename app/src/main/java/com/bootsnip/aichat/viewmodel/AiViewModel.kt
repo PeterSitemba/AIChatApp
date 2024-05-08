@@ -7,13 +7,18 @@ import androidx.lifecycle.viewModelScope
 import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.chat.ChatRole
 import com.bootsnip.aichat.db.ChatHistory
+import com.bootsnip.aichat.db.ChatHistoryUpdate
 import com.bootsnip.aichat.db.ChatHistoryUpdateFav
+import com.bootsnip.aichat.model.AstraChatMessage
 import com.bootsnip.aichat.repo.IAiRepo
+import com.bootsnip.aichat.util.AssistantType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -27,16 +32,27 @@ class AiViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
-    private val _chatHistory: MutableStateFlow<List<ChatHistory>> = MutableStateFlow(mutableListOf())
+    private val _chatHistory: MutableStateFlow<List<ChatHistory>> =
+        MutableStateFlow(mutableListOf())
     val chatHistory = _chatHistory.asStateFlow()
 
-    private val _favChatHistory: MutableStateFlow<List<ChatHistory>> = MutableStateFlow(mutableListOf())
+    private val _favChatHistory: MutableStateFlow<List<ChatHistory>> =
+        MutableStateFlow(mutableListOf())
     val favChatHistory = _favChatHistory.asStateFlow()
+
+    private val currentRowId: MutableStateFlow<Long?> = MutableStateFlow(null)
+
+    val selectedChatHistory: MutableStateFlow<Int?> = MutableStateFlow(null)
+
+    private var isUpdate: Boolean = false
 
     fun getGPTResponse(gptQuery: String) {
         _isLoading.value = true
         viewModelScope.launch {
             try {
+
+                isUpdate = chatList.value.isNotEmpty()
+
                 val newQueryList = chatList.value.toMutableList()
                 chatList.value = newQueryList.apply {
                     this.add(
@@ -48,13 +64,14 @@ class AiViewModel @Inject constructor(
                 val message = response.choices.first().message.content.orEmpty()
                 val role = response.choices.first().message.role
 
-
                 val newResponseList = chatList.value.toMutableList()
                 chatList.value = newResponseList.apply {
                     this.add(
                         ChatMessage(role, message)
                     )
                 }
+
+                insertOrUpdateDb()
 
                 Log.d("GPT RESPONSE ID", response.id)
                 _isLoading.value = false
@@ -66,9 +83,36 @@ class AiViewModel @Inject constructor(
         }
     }
 
-    fun insertChatHistory(chatHistory: ChatHistory){
+    private fun insertOrUpdateDb() {
+        val chatList = chatList.value.map { chatMessage ->
+            AstraChatMessage(
+                chatMessage.role,
+                chatMessage.content
+            )
+        }
+
+        if (isUpdate) {
+            val chatHistoryUpdate = ChatHistoryUpdate(
+                currentRowId.value?.toInt(),
+                chatList
+            )
+            updateChatHistory(chatHistoryUpdate)
+        } else {
+            val chatHistory = ChatHistory(
+                assistantType = AssistantType.GPT35TURBO.assistantType,
+                chatMessageList = chatList,
+                fav = 0
+            )
+            insertChatHistory(chatHistory)
+        }
+        getAllChatHistory()
+    }
+
+    private fun insertChatHistory(chatHistory: ChatHistory) {
         viewModelScope.launch {
-            repo.insertChatHistory(chatHistory)
+            withContext(Dispatchers.IO) {
+                currentRowId.value = repo.insertChatHistory(chatHistory)
+            }
         }
     }
 
@@ -88,6 +132,12 @@ class AiViewModel @Inject constructor(
         }
     }
 
+    private fun updateChatHistory(chatHistoryUpdate: ChatHistoryUpdate) {
+        viewModelScope.launch {
+            repo.updateChatHistory(chatHistoryUpdate)
+        }
+    }
+
     fun updateChatHistoryStatus(chatHistoryUpdateFav: ChatHistoryUpdateFav) {
         viewModelScope.launch {
             repo.updateChatHistoryFavStatus(chatHistoryUpdateFav)
@@ -98,5 +148,25 @@ class AiViewModel @Inject constructor(
         viewModelScope.launch {
             repo.deleteChatHistory(id)
         }
+    }
+
+    fun startNewChat() {
+        chatList.value = mutableListOf()
+        currentRowId.value = null
+    }
+
+    fun continueChat(uid: Int) {
+        val chatHistory = chatHistory.value.find {
+            it.uid == uid
+        }
+
+        chatList.value = chatHistory?.chatMessageList?.map {
+            ChatMessage(
+                it.role,
+                it.content
+            )
+        }?.toMutableList() ?: mutableListOf()
+
+        currentRowId.value = uid.toLong()
     }
 }

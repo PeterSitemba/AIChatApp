@@ -16,16 +16,16 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
 import com.bootsnip.aichat.viewmodel.AiViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatHistoryScreen(
-    viewModel: AiViewModel = hiltViewModel(),
-    modifier: Modifier
+    viewModel: AiViewModel,
+    navController: NavHostController
 ) {
 
     LaunchedEffect(Unit) {
@@ -40,7 +40,7 @@ fun ChatHistoryScreen(
     )
     val coroutineScope = rememberCoroutineScope()
 
-    ConstraintLayout(modifier = modifier.fillMaxSize()) {
+    ConstraintLayout(modifier = Modifier.fillMaxSize()) {
 
         val (tabs, pager) = createRefs()
 
@@ -84,9 +84,9 @@ fun ChatHistoryScreen(
                 }
         ) { page ->
             if (page == 0) {
-                AllChatHistoryScreen(chatHistoryList = chatHistoryList)
+                AllChatHistoryScreen(chatHistoryList = chatHistoryList, navController, viewModel)
             } else {
-               FavChatHistoryScreen(chatHistoryList = favChatHistoryList)
+               FavChatHistoryScreen(chatHistoryList = favChatHistoryList, navController, viewModel)
             }
         }
     }

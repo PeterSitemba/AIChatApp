@@ -6,10 +6,12 @@ import com.aallam.openai.api.chat.ChatRole
 import com.aallam.openai.client.OpenAI
 import com.bootsnip.aichat.db.ChatHistory
 import com.bootsnip.aichat.db.ChatHistoryDao
+import com.bootsnip.aichat.db.ChatHistoryUpdate
 import com.bootsnip.aichat.db.ChatHistoryUpdateFav
 import com.bootsnip.aichat.service.IApiService
 import com.bootsnip.aichat.util.Key.KEY
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
@@ -41,23 +43,26 @@ class AiRepo @Inject constructor(
     //region room db functions
 
     override fun getAllChatHistory() = chatHistoryDao.getAllChatHistoryDistinct()
+
     override fun getAllFavChatHistory() = chatHistoryDao.getAllFavChatHistoryDistinct()
-    override suspend fun updateChatHistoryFavStatus(chatHistoryUpdateFav: ChatHistoryUpdateFav) {
-        withContext(ioDispatcher){
+    override suspend fun updateChatHistory(chatHistoryUpdate: ChatHistoryUpdate) =
+        withContext(ioDispatcher) {
+            chatHistoryDao.updateChatHistory(chatHistoryUpdate)
+        }
+
+
+    override suspend fun updateChatHistoryFavStatus(chatHistoryUpdateFav: ChatHistoryUpdateFav) =
+        withContext(ioDispatcher) {
             chatHistoryDao.updateChatHistoryFavStatus(chatHistoryUpdateFav)
         }
-    }
 
-    override suspend fun insertChatHistory(chatHistory: ChatHistory) {
-        withContext(ioDispatcher){
-            chatHistoryDao.insertChatHistory(chatHistory)
-        }
-    }
+    override fun insertChatHistory(chatHistory: ChatHistory) =
+        chatHistoryDao.insertChatHistory(chatHistory)
 
-    override suspend fun deleteChatHistory(id: Int) {
-        withContext(ioDispatcher){
+    override suspend fun deleteChatHistory(id: Int) =
+        withContext(ioDispatcher) {
             chatHistoryDao.deleteChatHistory(id)
         }
-    }
+
 
 }

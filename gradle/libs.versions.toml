@@ -3,11 +3,11 @@ activity-compose = "1.9.0"
 lifecycle-runtime-ktx = "2.7.0"
 androidx-junit = "1.1.5"
 appcompat = "1.6.1"
-core-ktx = "1.13.0"
+core-ktx = "1.13.1"
 espresso-core = "3.5.1"
 junit = "4.13.2"
-material = "1.11.0"
-compose-bom = "2024.04.01"
+material = "1.12.0"
+compose-bom = "2024.05.00"
 constraint-layout = "1.0.1"
 ktor = "2.3.10"
 kotlinx-serialization = "1.5.1"
@@ -16,6 +16,7 @@ open-api-bom = "3.7.2"
 androidx-hilt = "1.2.0"
 room = "2.6.1"
 gson = "2.10.1"
+compose-navigation = "2.7.7"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
@@ -37,6 +38,8 @@ androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graph
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+
+androidx-compose-navigation = { module = "androidx.navigation:navigation-compose", version.ref = "compose-navigation" }
 
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-android = { module = "io.ktor:ktor-client-android", version.ref = "ktor" }

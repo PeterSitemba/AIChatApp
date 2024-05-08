@@ -70,6 +70,10 @@ fun HomeScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.getAllChatHistory()
+    }
+
     if(showSuggestionDialog){
         AstraSuggestionsDialog(
             showSuggestionDialog = {

@@ -25,6 +25,7 @@ import com.bootsnip.aichat.viewmodel.AiViewModel
 
 @Composable
 fun ChatHistoryListItem(
+    modifier: Modifier,
     placeHolder: String,
     id: Int,
     isFav: Boolean = false,
@@ -32,7 +33,7 @@ fun ChatHistoryListItem(
 ) {
 
     ConstraintLayout(
-        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp)
+        modifier = modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp)
     ) {
 
         val (profilePic, chat, favIcon) = createRefs()
