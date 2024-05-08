@@ -9,7 +9,6 @@ import com.bootsnip.aichat.db.ChatHistoryDao
 import com.bootsnip.aichat.db.ChatHistoryUpdate
 import com.bootsnip.aichat.db.ChatHistoryUpdateFav
 import com.bootsnip.aichat.service.IApiService
-import com.bootsnip.aichat.util.Key.KEY
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -20,10 +19,7 @@ class AiRepo @Inject constructor(
     private val chatHistoryDao: ChatHistoryDao
 ) : IAiRepo {
 
-    //assistant API calls
-    private val openAI = OpenAI(KEY)
-
-    override suspend fun gtpChatResponse(query: List<ChatMessage>): ChatCompletion =
+    override suspend fun gtpChatResponse(query: List<ChatMessage>, openAiAuth: String): ChatCompletion =
         withContext(ioDispatcher) {
             val completeQuery: MutableList<ChatMessage> = mutableListOf()
             completeQuery.add(
@@ -35,7 +31,7 @@ class AiRepo @Inject constructor(
             )
             completeQuery.addAll(query)
 
-            openAI.chatCompletion(service.getGPTResponse(completeQuery.toList()))
+            OpenAI(openAiAuth).chatCompletion(service.getGPTResponse(completeQuery.toList()))
         }
 
 
@@ -62,6 +58,4 @@ class AiRepo @Inject constructor(
         withContext(ioDispatcher) {
             chatHistoryDao.deleteChatHistory(id)
         }
-
-
 }

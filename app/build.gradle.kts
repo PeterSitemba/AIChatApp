@@ -33,6 +33,7 @@ android {
         }
     }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
@@ -113,4 +114,10 @@ dependencies {
 
     //compose navigation
     implementation(libs.androidx.compose.navigation)
+
+    //amplify
+    implementation(libs.amplify.aws.api)
+    implementation(libs.amplify.aws.datastore)
+    implementation(libs.amplify.aws.auth.cognito)
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
 }

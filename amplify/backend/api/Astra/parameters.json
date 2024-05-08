@@ -1,0 +1,6 @@
+{
+  "AppSyncApiName": "Astra",
+  "DynamoDBBillingMode": "PAY_PER_REQUEST",
+  "DynamoDBEnableServerSideEncryption": false,
+  "AuthModeLastUpdated": "2024-05-08T21:36:36.854Z"
+}

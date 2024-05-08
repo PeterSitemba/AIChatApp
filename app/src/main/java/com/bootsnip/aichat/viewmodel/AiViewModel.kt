@@ -6,6 +6,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.chat.ChatRole
+import com.amplifyframework.core.Amplify
+import com.amplifyframework.datastore.generated.model.OpenAi
 import com.bootsnip.aichat.db.ChatHistory
 import com.bootsnip.aichat.db.ChatHistoryUpdate
 import com.bootsnip.aichat.db.ChatHistoryUpdateFav
@@ -44,13 +46,22 @@ class AiViewModel @Inject constructor(
 
     val selectedChatHistory: MutableStateFlow<Int?> = MutableStateFlow(null)
 
+    private val openAiAuth: MutableStateFlow<String> = MutableStateFlow("")
+
     private var isUpdate: Boolean = false
+
+    init {
+        observeOpenAi()
+    }
 
     fun getGPTResponse(gptQuery: String) {
         _isLoading.value = true
+        if(openAiAuth.value.isEmpty()){
+            queryOpenAi()
+            return
+        }
         viewModelScope.launch {
             try {
-
                 isUpdate = chatList.value.isNotEmpty()
 
                 val newQueryList = chatList.value.toMutableList()
@@ -60,7 +71,7 @@ class AiViewModel @Inject constructor(
                     )
                 }
 
-                val response = repo.gtpChatResponse(newQueryList.toList())
+                val response = repo.gtpChatResponse(newQueryList.toList(), openAiAuth.value)
                 val message = response.choices.first().message.content.orEmpty()
                 val role = response.choices.first().message.role
 
@@ -168,5 +179,35 @@ class AiViewModel @Inject constructor(
         }?.toMutableList() ?: mutableListOf()
 
         currentRowId.value = uid.toLong()
+    }
+
+    private fun observeOpenAi() {
+        viewModelScope.launch {
+            Amplify.DataStore.observe(OpenAi::class.java,
+                { Log.i("Amplify DataStore", "Observation began") },
+                {
+                    val openAi = it.item().openAi
+                    openAiAuth.value = openAi
+                    Log.i("Data", "KEY: $openAi")
+                },
+                { Log.e("Amplify DataStore", "Observation failed", it) },
+                { Log.i("Amplify DataStore", "Observation complete") }
+            )
+        }
+    }
+
+    private fun queryOpenAi() {
+        viewModelScope.launch {
+            Amplify.DataStore.query(
+                OpenAi::class.java,
+                { items ->
+                    while (items.hasNext()) {
+                        val item = items.next()
+                        openAiAuth.value = item.openAi
+                    }
+                },
+                { failure -> Log.e("Amplify DataStore", "Could not query DataStore", failure) }
+            )
+        }
     }
 }

@@ -1,0 +1,20 @@
+{
+  "staging": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-astra-staging-8dcb1-authRole",
+      "UnauthRoleArn": "arn:aws:iam::432592895297:role/amplify-astra-staging-8dcb1-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::432592895297:role/amplify-astra-staging-8dcb1-authRole",
+      "Region": "eu-central-1",
+      "DeploymentBucketName": "amplify-astra-staging-8dcb1-deployment",
+      "UnauthRoleName": "amplify-astra-staging-8dcb1-unauthRole",
+      "StackName": "amplify-astra-staging-8dcb1",
+      "StackId": "arn:aws:cloudformation:eu-central-1:432592895297:stack/amplify-astra-staging-8dcb1/931dc270-0d5f-11ef-84d8-028d1fb383b9",
+      "AmplifyAppId": "d2l8w5946uri2r"
+    },
+    "categories": {
+      "auth": {
+        "Astra": {}
+      }
+    }
+  }
+}

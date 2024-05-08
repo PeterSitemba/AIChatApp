@@ -17,6 +17,8 @@ androidx-hilt = "1.2.0"
 room = "2.6.1"
 gson = "2.10.1"
 compose-navigation = "2.7.7"
+amplify = "2.16.0"
+desugar-jdk-libs = "1.1.5"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
@@ -69,5 +71,9 @@ room-paging = { module = "androidx.room:room-paging", version.ref = "room" }
 
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 
+amplify-aws-api = { module = "com.amplifyframework:aws-api", version.ref = "amplify" }
+amplify-aws-datastore = { module = "com.amplifyframework:aws-datastore", version.ref = "amplify" }
+amplify-aws-auth-cognito = { module = "com.amplifyframework:aws-auth-cognito", version.ref = "amplify" }
+desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar-jdk-libs" }
 
 [plugins]

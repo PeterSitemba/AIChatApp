@@ -8,7 +8,7 @@ import com.bootsnip.aichat.db.ChatHistoryUpdateFav
 import kotlinx.coroutines.flow.Flow
 
 interface IAiRepo {
-    suspend fun gtpChatResponse(query: List<ChatMessage>): ChatCompletion
+    suspend fun gtpChatResponse(query: List<ChatMessage>, openAiAuth: String): ChatCompletion
 
     fun insertChatHistory(chatHistory: ChatHistory): Long
 

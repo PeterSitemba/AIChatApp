@@ -1,0 +1,10 @@
+type OpenAi @model @auth(rules: [{allow: public}]) {
+  id: ID!
+  open_ai: String!
+}
+
+type UntitledModel @model @auth(rules: [{allow: public}]) {
+  id: ID!
+  app_name: String!
+}
+ 
