@@ -196,7 +196,9 @@ fun HomeScreen(
 
             ElevatedButton(
                 onClick = {
-                    viewModel.getGPTResponse(prompt)
+                    if(prompt.isNotEmpty()){
+                        viewModel.getGPTResponse(prompt)
+                    }
                     prompt = ""
                 },
                 shape = CircleShape,

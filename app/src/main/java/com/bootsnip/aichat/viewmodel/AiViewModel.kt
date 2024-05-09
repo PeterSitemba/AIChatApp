@@ -55,7 +55,8 @@ class AiViewModel @Inject constructor(
     init {
         fetchAuthSession()
         AuthFetchSessionOptions.builder().forceRefresh(true).build()
-        observeOpenAi()
+        queryOpenAi()
+        if(openAiAuth.value.isEmpty()) observeOpenAi()
     }
 
     fun getGPTResponse(gptQuery: String) {
@@ -190,7 +191,7 @@ class AiViewModel @Inject constructor(
             val response = repo.queryDataStore()
             response
                 .catch { Log.e("OpenAI KEY", "Error querying key", it) }
-                .collectLatest {
+                .collect {
                     Log.i("OpenAI KEY", "key ${it.openAi}")
                     openAiAuth.value = it.openAi
                 }
@@ -202,7 +203,7 @@ class AiViewModel @Inject constructor(
             val response = repo.observeDataStore()
             response
                 .catch { Log.e("OpenAI KEY", "Error querying key", it) }
-                .collectLatest {
+                .collect {
                     Log.i("OpenAI KEY", "key ${it.item().openAi}")
                     openAiAuth.value = it.item().openAi
                 }

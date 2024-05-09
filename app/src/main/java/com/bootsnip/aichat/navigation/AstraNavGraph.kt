@@ -6,6 +6,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -175,21 +177,37 @@ fun AstraNavGraph(
                     route = AllDestinations.HOME,
                     enterTransition = {
                         when (initialState.destination.route) {
-                            AllDestinations.AUTHENTICATION ->
-                                fadeIn(
-                                    animationSpec = tween(500)
-                                )
+                            AllDestinations.AUTHENTICATION -> {
+                                fadeIn(animationSpec = tween(220, delayMillis = 90)) +
+                                        scaleIn(
+                                            initialScale = 0.92f,
+                                            animationSpec = tween(220, delayMillis = 90)
+                                        )
+                            }
+
 
                             else -> null
                         }
                     },
                     popEnterTransition = {
                         when (initialState.destination.route) {
-                            AllDestinations.AUTHENTICATION ->
-                                fadeIn(
-                                    animationSpec = tween(200)
-                                )
+                            AllDestinations.AUTHENTICATION -> {
+                                fadeIn(animationSpec = tween(220, delayMillis = 90)) +
+                                        scaleIn(
+                                            initialScale = 0.92f,
+                                            animationSpec = tween(220, delayMillis = 90)
+                                        )
+                            }
 
+                            else -> null
+                        }
+                    },
+                    exitTransition = {
+                        when (targetState.destination.route) {
+                            AllDestinations.AUTHENTICATION -> {
+                                scaleOut(targetScale = 0.92f, animationSpec = tween(90)) +
+                                        fadeOut(animationSpec = tween(90))
+                            }
                             else -> null
                         }
                     }
@@ -203,11 +221,10 @@ fun AstraNavGraph(
                     route = AllDestinations.AUTHENTICATION,
                     popExitTransition = {
                         when (targetState.destination.route) {
-                            AllDestinations.HOME ->
-                                fadeOut(
-                                    animationSpec = tween(200)
-                                )
-
+                            AllDestinations.HOME -> {
+                                scaleOut(targetScale = 0.92f, animationSpec = tween(90)) +
+                                        fadeOut(animationSpec = tween(90))
+                            }
                             else -> null
                         }
                     }
