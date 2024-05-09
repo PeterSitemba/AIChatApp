@@ -119,5 +119,8 @@ dependencies {
     implementation(libs.amplify.aws.api)
     implementation(libs.amplify.aws.datastore)
     implementation(libs.amplify.aws.auth.cognito)
+    implementation(libs.amplify.kotlin)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
+
+    implementation (libs.authenticator)
 }

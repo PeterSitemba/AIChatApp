@@ -3,9 +3,13 @@ package com.bootsnip.aichat.navigation
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -37,6 +41,7 @@ import androidx.navigation.compose.rememberNavController
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.activities.ChatHistoryActivity
 import com.bootsnip.aichat.ui.components.AppDrawer
+import com.bootsnip.aichat.ui.screens.AuthenticationScreen
 import com.bootsnip.aichat.ui.screens.HomeScreen
 import com.bootsnip.aichat.viewmodel.AiViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -44,6 +49,7 @@ import kotlinx.coroutines.launch
 
 const val CLOSE_DRAWER = "close_drawer"
 const val UID = "uid"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AstraNavGraph(
@@ -60,31 +66,38 @@ fun AstraNavGraph(
         AppNavigationActions(navController)
     }
     val context = LocalContext.current
-    val activityResultLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) {
-        val closeDrawer = it.data?.getBooleanExtra(CLOSE_DRAWER, false)
-        val uid = it.data?.getIntExtra(UID, 0)
-        if((closeDrawer != null) && closeDrawer && uid != null){
-            coroutineScope.launch { drawerState.close() }
-            viewModel.continueChat(uid)
+    val activityResultLauncher =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) {
+            val closeDrawer = it.data?.getBooleanExtra(CLOSE_DRAWER, false)
+            val uid = it.data?.getIntExtra(UID, 0)
+            if ((closeDrawer != null) && closeDrawer && uid != null) {
+                coroutineScope.launch { drawerState.close() }
+                viewModel.continueChat(uid)
+            }
         }
-    }
 
     ModalNavigationDrawer(
         drawerContent = {
-            AppDrawer(
-                route = currentRoute,
-                navigateToHome = { navigationActions.navigateToHome() },
-                navigateToChatHistory = {
-                    activityResultLauncher.launch(
-                        Intent(
-                            context,
-                            ChatHistoryActivity::class.java
+            if (currentRoute != AllDestinations.AUTHENTICATION) {
+                AppDrawer(
+                    route = currentRoute,
+                    navigateToHome = { navigationActions.navigateToHome() },
+                    navigateToChatHistory = {
+                        activityResultLauncher.launch(
+                            Intent(
+                                context,
+                                ChatHistoryActivity::class.java
+                            )
                         )
-                    )
-                },
-                closeDrawer = { coroutineScope.launch { drawerState.close() } },
-                modifier = Modifier
-            )
+                    },
+                    navigateToAuthentication = {
+                        navigationActions.navigateToAuthentication()
+
+                    },
+                    closeDrawer = { coroutineScope.launch { drawerState.close() } },
+                    modifier = Modifier
+                )
+            }
         }, drawerState = drawerState,
         gesturesEnabled = currentRoute == AllDestinations.HOME
 
@@ -93,34 +106,61 @@ fun AstraNavGraph(
             topBar = {
                 CenterAlignedTopAppBar(
                     title = {
-                        Text(
-                            text = stringResource(id = R.string.app_name),
-                            fontWeight = FontWeight.Bold
-                        )
+                        when (currentRoute) {
+                            AllDestinations.HOME -> {
+                                Text(
+                                    text = stringResource(id = R.string.app_name),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     navigationIcon = {
-                        IconButton(onClick = {
-                            coroutineScope.launch { drawerState.open() }
-                        }, content = {
-                            Icon(
-                                imageVector = Icons.Default.Menu, contentDescription = null
-                            )
-                        })
+                        when (currentRoute) {
+                            AllDestinations.HOME -> {
+                                IconButton(onClick = {
+                                    coroutineScope.launch { drawerState.open() }
+                                }, content = {
+                                    Icon(
+                                        imageVector = Icons.Default.Menu, contentDescription = null
+                                    )
+                                })
+                            }
+
+                            AllDestinations.AUTHENTICATION -> {
+                                IconButton(onClick = {
+                                    navController.popBackStack()
+                                }, content = {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = null
+                                    )
+                                })
+                            }
+                        }
+
                     }, colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.background,
                         titleContentColor = MaterialTheme.colorScheme.onBackground,
                     ),
                     actions = {
-                        IconButton(onClick = {
-                            viewModel.startNewChat()
-                        }) {
-                            Icon(
-                                imageVector = Icons.Filled.AddCircle,
-                                contentDescription = "Localized description",
-                                tint = MaterialTheme.colorScheme.secondary
-                            )
+                        when (currentRoute) {
+                            AllDestinations.HOME -> {
+                                IconButton(onClick = {
+                                    viewModel.startNewChat()
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.AddCircle,
+                                        contentDescription = "Localized description",
+                                        tint = MaterialTheme.colorScheme.secondary
+                                    )
+                                }
+                            }
+
+                            else -> {}
                         }
+
                     }
                 )
             }, modifier = Modifier
@@ -131,10 +171,48 @@ fun AstraNavGraph(
                 modifier = modifier.padding(it)
             ) {
 
-                composable(AllDestinations.HOME) {
+                composable(
+                    route = AllDestinations.HOME,
+                    enterTransition = {
+                        when (initialState.destination.route) {
+                            AllDestinations.AUTHENTICATION ->
+                                fadeIn(
+                                    animationSpec = tween(500)
+                                )
+
+                            else -> null
+                        }
+                    },
+                    popEnterTransition = {
+                        when (initialState.destination.route) {
+                            AllDestinations.AUTHENTICATION ->
+                                fadeIn(
+                                    animationSpec = tween(200)
+                                )
+
+                            else -> null
+                        }
+                    }
+                ) {
                     HomeScreen(
                         viewModel
                     )
+                }
+
+                composable(
+                    route = AllDestinations.AUTHENTICATION,
+                    popExitTransition = {
+                        when (targetState.destination.route) {
+                            AllDestinations.HOME ->
+                                fadeOut(
+                                    animationSpec = tween(200)
+                                )
+
+                            else -> null
+                        }
+                    }
+                ) {
+                    AuthenticationScreen()
                 }
             }
         }

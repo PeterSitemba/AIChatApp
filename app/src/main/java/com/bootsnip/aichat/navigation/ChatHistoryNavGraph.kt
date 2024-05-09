@@ -122,7 +122,7 @@ fun ChatHistoryNavGraph(
                         AllDestinations.CHAT_HISTORY_DETAIL ->
                             slideIntoContainer(
                                 AnimatedContentTransitionScope.SlideDirection.Left,
-                                animationSpec = tween(300)
+                                animationSpec = tween(200)
                             )
 
                         else -> null
@@ -133,7 +133,7 @@ fun ChatHistoryNavGraph(
                         AllDestinations.CHAT_HISTORY_DETAIL ->
                             slideOutOfContainer(
                                 AnimatedContentTransitionScope.SlideDirection.Left,
-                                animationSpec = tween(300)
+                                animationSpec = tween(200)
                             )
 
                         else -> null
@@ -144,7 +144,7 @@ fun ChatHistoryNavGraph(
                         AllDestinations.CHAT_HISTORY_DETAIL ->
                             slideIntoContainer(
                                 AnimatedContentTransitionScope.SlideDirection.Right,
-                                animationSpec = tween(300)
+                                animationSpec = tween(200)
                             )
 
                         else -> null
@@ -155,7 +155,7 @@ fun ChatHistoryNavGraph(
                         AllDestinations.CHAT_HISTORY_DETAIL ->
                             slideOutOfContainer(
                                 AnimatedContentTransitionScope.SlideDirection.Right,
-                                animationSpec = tween(300)
+                                animationSpec = tween(200)
                             )
 
                         else -> null
@@ -175,7 +175,7 @@ fun ChatHistoryNavGraph(
                         AllDestinations.CHAT_HISTORY ->
                             slideIntoContainer(
                                 AnimatedContentTransitionScope.SlideDirection.Left,
-                                animationSpec = tween(300)
+                                animationSpec = tween(200)
                             )
 
                         else -> null
@@ -186,7 +186,7 @@ fun ChatHistoryNavGraph(
                         AllDestinations.CHAT_HISTORY ->
                             slideOutOfContainer(
                                 AnimatedContentTransitionScope.SlideDirection.Left,
-                                animationSpec = tween(300)
+                                animationSpec = tween(200)
                             )
 
                         else -> null
@@ -197,7 +197,7 @@ fun ChatHistoryNavGraph(
                         AllDestinations.CHAT_HISTORY ->
                             slideIntoContainer(
                                 AnimatedContentTransitionScope.SlideDirection.Right,
-                                animationSpec = tween(300)
+                                animationSpec = tween(200)
                             )
 
                         else -> null
@@ -208,7 +208,7 @@ fun ChatHistoryNavGraph(
                         AllDestinations.CHAT_HISTORY ->
                             slideOutOfContainer(
                                 AnimatedContentTransitionScope.SlideDirection.Right,
-                                animationSpec = tween(300)
+                                animationSpec = tween(200)
                             )
 
                         else -> null

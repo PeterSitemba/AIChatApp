@@ -6,8 +6,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.chat.ChatRole
-import com.amplifyframework.core.Amplify
-import com.amplifyframework.datastore.generated.model.OpenAi
+import com.amplifyframework.auth.cognito.AWSCognitoAuthSession
+import com.amplifyframework.auth.options.AuthFetchSessionOptions
+import com.amplifyframework.auth.result.AuthSessionResult
 import com.bootsnip.aichat.db.ChatHistory
 import com.bootsnip.aichat.db.ChatHistoryUpdate
 import com.bootsnip.aichat.db.ChatHistoryUpdateFav
@@ -18,6 +19,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -51,12 +53,14 @@ class AiViewModel @Inject constructor(
     private var isUpdate: Boolean = false
 
     init {
+        fetchAuthSession()
+        AuthFetchSessionOptions.builder().forceRefresh(true).build()
         observeOpenAi()
     }
 
     fun getGPTResponse(gptQuery: String) {
         _isLoading.value = true
-        if(openAiAuth.value.isEmpty()){
+        if (openAiAuth.value.isEmpty()) {
             queryOpenAi()
             return
         }
@@ -181,33 +185,45 @@ class AiViewModel @Inject constructor(
         currentRowId.value = uid.toLong()
     }
 
-    private fun observeOpenAi() {
+    private fun queryOpenAi() {
         viewModelScope.launch {
-            Amplify.DataStore.observe(OpenAi::class.java,
-                { Log.i("Amplify DataStore", "Observation began") },
-                {
-                    val openAi = it.item().openAi
-                    openAiAuth.value = openAi
-                    Log.i("Data", "KEY: $openAi")
-                },
-                { Log.e("Amplify DataStore", "Observation failed", it) },
-                { Log.i("Amplify DataStore", "Observation complete") }
-            )
+            val response = repo.queryDataStore()
+            response
+                .catch { Log.e("OpenAI KEY", "Error querying key", it) }
+                .collectLatest {
+                    Log.i("OpenAI KEY", "key ${it.openAi}")
+                    openAiAuth.value = it.openAi
+                }
         }
     }
 
-    private fun queryOpenAi() {
+    private fun observeOpenAi() {
         viewModelScope.launch {
-            Amplify.DataStore.query(
-                OpenAi::class.java,
-                { items ->
-                    while (items.hasNext()) {
-                        val item = items.next()
-                        openAiAuth.value = item.openAi
-                    }
-                },
-                { failure -> Log.e("Amplify DataStore", "Could not query DataStore", failure) }
-            )
+            val response = repo.observeDataStore()
+            response
+                .catch { Log.e("OpenAI KEY", "Error querying key", it) }
+                .collectLatest {
+                    Log.i("OpenAI KEY", "key ${it.item().openAi}")
+                    openAiAuth.value = it.item().openAi
+                }
         }
     }
+
+    private fun fetchAuthSession() {
+        viewModelScope.launch {
+            val response = repo.fetchAuthSession() as AWSCognitoAuthSession
+            when (response.identityIdResult.type) {
+                AuthSessionResult.Type.SUCCESS -> {
+                    Log.i("Auth Session", "IdentityId = ${response.identityIdResult.value}")
+                    Log.i(
+                        "Auth Session",
+                        "access Token = ${response.tokensResult.value?.accessToken}"
+                    )
+                }
+                AuthSessionResult.Type.FAILURE ->
+                    Log.w("Auth Session", "IdentityId not found", response.identityIdResult.error)
+            }
+        }
+    }
+
 }

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
@@ -37,6 +38,7 @@ fun AppDrawer(
     modifier: Modifier = Modifier,
     navigateToHome: () -> Unit = {},
     navigateToChatHistory: () -> Unit = {},
+    navigateToAuthentication: () -> Unit = {},
     closeDrawer: () -> Unit = {}
 ) {
     ModalDrawerSheet(modifier = Modifier.requiredWidth(250.dp)) {
@@ -65,6 +67,17 @@ fun AppDrawer(
                 navigateToChatHistory()
             },
             icon = { Icon(painterResource(id = R.drawable.chat), contentDescription = null) },
+            shape = MaterialTheme.shapes.small
+        )
+
+        NavigationDrawerItem(
+            label = { Text(text = "Sign In", style = MaterialTheme.typography.labelSmall) },
+            selected = route == AllDestinations.AUTHENTICATION,
+            onClick = {
+                navigateToAuthentication()
+                closeDrawer()
+            },
+            icon = { Icon(Icons.Default.Person, contentDescription = null) },
             shape = MaterialTheme.shapes.small
         )
     }
