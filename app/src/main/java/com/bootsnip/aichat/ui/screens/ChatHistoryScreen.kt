@@ -18,13 +18,13 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import com.bootsnip.aichat.viewmodel.AiViewModel
+import com.bootsnip.aichat.viewmodel.AstraViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatHistoryScreen(
-    viewModel: AiViewModel,
+    viewModel: AstraViewModel,
     navController: NavHostController
 ) {
 

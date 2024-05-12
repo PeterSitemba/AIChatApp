@@ -26,7 +26,7 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
-class AiViewModel @Inject constructor(
+class AstraViewModel @Inject constructor(
     private val repo: IAiRepo,
     application: Application
 ) : AndroidViewModel(application) {
@@ -63,6 +63,7 @@ class AiViewModel @Inject constructor(
         _isLoading.value = true
         if (openAiAuth.value.isEmpty()) {
             queryOpenAi()
+            //close loading indicator and display no internet connection error
             return
         }
         viewModelScope.launch {

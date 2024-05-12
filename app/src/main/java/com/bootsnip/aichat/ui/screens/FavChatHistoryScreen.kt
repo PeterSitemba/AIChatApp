@@ -19,13 +19,13 @@ import com.bootsnip.aichat.R
 import com.bootsnip.aichat.navigation.AppNavigationActions
 import com.bootsnip.aichat.ui.components.ChatHistoryListItem
 import com.bootsnip.aichat.ui.components.EmptyScreenPlaceholder
-import com.bootsnip.aichat.viewmodel.AiViewModel
+import com.bootsnip.aichat.viewmodel.AstraViewModel
 
 @Composable
 fun FavChatHistoryScreen(
     chatHistoryList: List<ChatHistory>,
     navHostController: NavHostController,
-    viewModel: AiViewModel
+    viewModel: AstraViewModel
 ) {
 
     val navigationActions = remember(navHostController) {

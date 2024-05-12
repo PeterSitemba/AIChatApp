@@ -26,11 +26,11 @@ import com.aallam.openai.api.core.Role
 import com.bootsnip.aichat.ui.components.AiChatBox
 import com.bootsnip.aichat.ui.components.UserChatBox
 import com.bootsnip.aichat.ui.theme.Purple40
-import com.bootsnip.aichat.viewmodel.AiViewModel
+import com.bootsnip.aichat.viewmodel.AstraViewModel
 
 @Composable
 fun ChatHistoryDetailScreen(
-    viewModel: AiViewModel,
+    viewModel: AstraViewModel,
     navigateHome: (Int) -> Unit
 ) {
     val listState = rememberLazyListState()

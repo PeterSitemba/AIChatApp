@@ -21,7 +21,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.db.ChatHistoryUpdateFav
 import com.bootsnip.aichat.ui.theme.Orange
-import com.bootsnip.aichat.viewmodel.AiViewModel
+import com.bootsnip.aichat.viewmodel.AstraViewModel
 
 @Composable
 fun ChatHistoryListItem(
@@ -29,7 +29,7 @@ fun ChatHistoryListItem(
     placeHolder: String,
     id: Int,
     isFav: Boolean = false,
-    viewModel: AiViewModel = hiltViewModel()
+    viewModel: AstraViewModel = hiltViewModel()
 ) {
 
     ConstraintLayout(

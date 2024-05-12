@@ -51,8 +51,8 @@ fun DotsLoadingIndicator() {
         targetValue = minAlpha,
         animationSpec = infiniteRepeatable(animation = keyframes {
             durationMillis = duration
-            minAlpha at delay with LinearEasing
-            1f at delay + delayUnit with LinearEasing
+            minAlpha at delay using LinearEasing
+            1f at delay + delayUnit using LinearEasing
             minAlpha at delay + duration
         }), label = ""
     )

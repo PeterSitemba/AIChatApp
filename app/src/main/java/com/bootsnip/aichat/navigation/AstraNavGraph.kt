@@ -45,7 +45,7 @@ import com.bootsnip.aichat.ui.activities.ChatHistoryActivity
 import com.bootsnip.aichat.ui.components.AppDrawer
 import com.bootsnip.aichat.ui.screens.AuthenticationScreen
 import com.bootsnip.aichat.ui.screens.HomeScreen
-import com.bootsnip.aichat.viewmodel.AiViewModel
+import com.bootsnip.aichat.viewmodel.AstraViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -59,7 +59,7 @@ fun AstraNavGraph(
     navController: NavHostController = rememberNavController(),
     coroutineScope: CoroutineScope = rememberCoroutineScope(),
     drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed),
-    viewModel: AiViewModel = hiltViewModel()
+    viewModel: AstraViewModel = hiltViewModel()
 ) {
 
     val currentNavBackStackEntry by navController.currentBackStackEntryAsState()

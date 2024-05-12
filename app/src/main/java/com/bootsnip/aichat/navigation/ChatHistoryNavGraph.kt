@@ -32,7 +32,7 @@ import androidx.navigation.compose.rememberNavController
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.screens.ChatHistoryDetailScreen
 import com.bootsnip.aichat.ui.screens.ChatHistoryScreen
-import com.bootsnip.aichat.viewmodel.AiViewModel
+import com.bootsnip.aichat.viewmodel.AstraViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -40,7 +40,7 @@ import com.bootsnip.aichat.viewmodel.AiViewModel
 fun ChatHistoryNavGraph(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    viewModel: AiViewModel = hiltViewModel(),
+    viewModel: AstraViewModel = hiltViewModel(),
     navigateToHome: (Boolean, Int) -> Unit
 ) {
 

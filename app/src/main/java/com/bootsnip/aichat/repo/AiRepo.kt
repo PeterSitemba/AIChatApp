@@ -87,4 +87,41 @@ class AiRepo @Inject constructor(
         withContext(ioDispatcher) {
             Amplify.DataStore.query(OpenAi::class)
         }
+
+    fun chatHistoryRemoteOps() {
+       /* val item: ChatHistoryRemote = ChatHistoryRemote.builder()
+            .uid(1020)
+            .assistant_type("Lorem ipsum dolor sit amet")
+            .chat_message_list([])
+            .fav(1020)
+            .user_id("a3f4095e-39de-43d2-baf4-f8c16f0f6f4d")
+            .build()
+        Amplify.DataStore.save(
+            item,
+            { success -> Log.i("Amplify", "Saved item: " + success.item().name) },
+            { error -> Log.e("Amplify", "Could not save item to DataStore", error) }
+        )
+
+        Amplify.DataStore.save(
+            updatedItem,
+            { success -> Log.i("Amplify", "Updated item: " + success.item().name) },
+            { error -> Log.e("Amplify", "Could not save item to DataStore", error) }
+        )
+
+        Amplify.DataStore.delete(toDeleteItem,
+            { deleted -> Log.i("Amplify", "Deleted item.") },
+            { failure -> Log.e("Amplify", "Delete failed.", failure) }
+        )
+
+        Amplify.DataStore.query(
+            ChatHistoryRemote::class.java,
+            { items ->
+                while (items.hasNext()) {
+                    val item = items.next()
+                    Log.i("Amplify", "Queried item: " + item.id)
+                }
+            },
+            { failure -> Log.e("Tutorial", "Could not query DataStore", failure) }
+        )*/
+    }
 }

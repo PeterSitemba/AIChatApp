@@ -49,12 +49,12 @@ import com.bootsnip.aichat.ui.components.AstraSuggestionsDialog
 import com.bootsnip.aichat.ui.components.DotsLoadingIndicator
 import com.bootsnip.aichat.ui.components.HomePlaceholder
 import com.bootsnip.aichat.ui.components.UserChatBox
-import com.bootsnip.aichat.viewmodel.AiViewModel
+import com.bootsnip.aichat.viewmodel.AstraViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    viewModel: AiViewModel
+    viewModel: AstraViewModel
 ) {
     val gptChatList = viewModel.chatList.collectAsStateWithLifecycle().value
     val isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value
