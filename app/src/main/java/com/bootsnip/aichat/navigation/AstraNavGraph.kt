@@ -71,7 +71,7 @@ fun AstraNavGraph(
     val activityResultLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) {
             val closeDrawer = it.data?.getBooleanExtra(CLOSE_DRAWER, false)
-            val uid = it.data?.getIntExtra(UID, 0)
+            val uid = it.data?.getStringExtra(UID)
             if ((closeDrawer != null) && closeDrawer && uid != null) {
                 coroutineScope.launch { drawerState.close() }
                 viewModel.continueChat(uid)

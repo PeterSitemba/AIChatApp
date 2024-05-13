@@ -41,7 +41,7 @@ fun ChatHistoryNavGraph(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     viewModel: AstraViewModel = hiltViewModel(),
-    navigateToHome: (Boolean, Int) -> Unit
+    navigateToHome: (Boolean, String) -> Unit
 ) {
 
     val currentNavBackStackEntry by navController.currentBackStackEntryAsState()
@@ -49,8 +49,8 @@ fun ChatHistoryNavGraph(
 
     val uid = viewModel.selectedChatHistory.collectAsStateWithLifecycle().value
 
-    val chatHistory = viewModel.chatHistory.collectAsStateWithLifecycle().value.find {
-        it.uid == uid
+    val chatHistory = viewModel.chatHistoryRemote.collectAsStateWithLifecycle().value.find {
+        it.id == uid
     }
 
     Scaffold(
@@ -79,7 +79,7 @@ fun ChatHistoryNavGraph(
                         if (currentRoute == AllDestinations.CHAT_HISTORY_DETAIL) {
                             navController.popBackStack()
                         } else {
-                            navigateToHome(false, 0)
+                            navigateToHome(false, "")
                         }
                     }, content = {
                         Icon(
