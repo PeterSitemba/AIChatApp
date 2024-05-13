@@ -2,7 +2,6 @@ package com.bootsnip.aichat.di
 
 import android.content.Context
 import androidx.room.Room
-import com.bootsnip.aichat.db.AstraRoomDatabase
 import com.bootsnip.aichat.repo.AiRepo
 import com.bootsnip.aichat.repo.IAiRepo
 import com.bootsnip.aichat.service.ApiService
@@ -37,19 +36,6 @@ interface AiModule {
 
         @Provides
         fun providesIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
-
-        @Singleton
-        @Provides
-        fun provideDatabase(@ApplicationContext appContext: Context): AstraRoomDatabase =
-            Room.databaseBuilder(
-                appContext,
-                AstraRoomDatabase::class.java,
-                "astra_db"
-            ).fallbackToDestructiveMigration().build()
-
-        @Singleton
-        @Provides
-        fun provideChatHistoryDao(db: AstraRoomDatabase) = db.ChatHistoryDao()
     }
 
 }

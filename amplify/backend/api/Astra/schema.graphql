@@ -1,10 +1,14 @@
+type ChatMessageObject {
+  role: String!
+  content: String!
+}
+
 type ChatHistoryRemote @model @auth(rules: [{allow: owner}]) {
   id: ID!
-  uid: Int!
   assistant_type: String!
-  chat_message_list: [String]
-  fav: Int!
+  chat_message_list: [ChatMessageObject!]
   user_id: ID!
+  fav: Int!
 }
 
 type OpenAi @model @auth(rules: [{allow: public}]) {

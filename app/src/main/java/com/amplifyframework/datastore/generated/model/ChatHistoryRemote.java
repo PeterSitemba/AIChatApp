@@ -27,17 +27,15 @@ import static com.amplifyframework.core.model.query.predicate.QueryField.field;
 })
 public final class ChatHistoryRemote implements Model {
   public static final QueryField ID = field("ChatHistoryRemote", "id");
-  public static final QueryField UID = field("ChatHistoryRemote", "uid");
   public static final QueryField ASSISTANT_TYPE = field("ChatHistoryRemote", "assistant_type");
   public static final QueryField CHAT_MESSAGE_LIST = field("ChatHistoryRemote", "chat_message_list");
-  public static final QueryField FAV = field("ChatHistoryRemote", "fav");
   public static final QueryField USER_ID = field("ChatHistoryRemote", "user_id");
+  public static final QueryField FAV = field("ChatHistoryRemote", "fav");
   private final @ModelField(targetType="ID", isRequired = true) String id;
-  private final @ModelField(targetType="Int", isRequired = true) Integer uid;
   private final @ModelField(targetType="String", isRequired = true) String assistant_type;
-  private final @ModelField(targetType="String") List<String> chat_message_list;
-  private final @ModelField(targetType="Int", isRequired = true) Integer fav;
+  private final @ModelField(targetType="ChatMessageObject") List<ChatMessageObject> chat_message_list;
   private final @ModelField(targetType="ID", isRequired = true) String user_id;
+  private final @ModelField(targetType="Int", isRequired = true) Integer fav;
   private @ModelField(targetType="AWSDateTime", isReadOnly = true) Temporal.DateTime createdAt;
   private @ModelField(targetType="AWSDateTime", isReadOnly = true) Temporal.DateTime updatedAt;
   /** @deprecated This API is internal to Amplify and should not be used. */
@@ -50,24 +48,20 @@ public final class ChatHistoryRemote implements Model {
       return id;
   }
   
-  public Integer getUid() {
-      return uid;
-  }
-  
   public String getAssistantType() {
       return assistant_type;
   }
   
-  public List<String> getChatMessageList() {
+  public List<ChatMessageObject> getChatMessageList() {
       return chat_message_list;
-  }
-  
-  public Integer getFav() {
-      return fav;
   }
   
   public String getUserId() {
       return user_id;
+  }
+  
+  public Integer getFav() {
+      return fav;
   }
   
   public Temporal.DateTime getCreatedAt() {
@@ -78,13 +72,12 @@ public final class ChatHistoryRemote implements Model {
       return updatedAt;
   }
   
-  private ChatHistoryRemote(String id, Integer uid, String assistant_type, List<String> chat_message_list, Integer fav, String user_id) {
+  private ChatHistoryRemote(String id, String assistant_type, List<ChatMessageObject> chat_message_list, String user_id, Integer fav) {
     this.id = id;
-    this.uid = uid;
     this.assistant_type = assistant_type;
     this.chat_message_list = chat_message_list;
-    this.fav = fav;
     this.user_id = user_id;
+    this.fav = fav;
   }
   
   @Override
@@ -96,11 +89,10 @@ public final class ChatHistoryRemote implements Model {
       } else {
       ChatHistoryRemote chatHistoryRemote = (ChatHistoryRemote) obj;
       return ObjectsCompat.equals(getId(), chatHistoryRemote.getId()) &&
-              ObjectsCompat.equals(getUid(), chatHistoryRemote.getUid()) &&
               ObjectsCompat.equals(getAssistantType(), chatHistoryRemote.getAssistantType()) &&
               ObjectsCompat.equals(getChatMessageList(), chatHistoryRemote.getChatMessageList()) &&
-              ObjectsCompat.equals(getFav(), chatHistoryRemote.getFav()) &&
               ObjectsCompat.equals(getUserId(), chatHistoryRemote.getUserId()) &&
+              ObjectsCompat.equals(getFav(), chatHistoryRemote.getFav()) &&
               ObjectsCompat.equals(getCreatedAt(), chatHistoryRemote.getCreatedAt()) &&
               ObjectsCompat.equals(getUpdatedAt(), chatHistoryRemote.getUpdatedAt());
       }
@@ -110,11 +102,10 @@ public final class ChatHistoryRemote implements Model {
    public int hashCode() {
     return new StringBuilder()
       .append(getId())
-      .append(getUid())
       .append(getAssistantType())
       .append(getChatMessageList())
-      .append(getFav())
       .append(getUserId())
+      .append(getFav())
       .append(getCreatedAt())
       .append(getUpdatedAt())
       .toString()
@@ -126,18 +117,17 @@ public final class ChatHistoryRemote implements Model {
     return new StringBuilder()
       .append("ChatHistoryRemote {")
       .append("id=" + String.valueOf(getId()) + ", ")
-      .append("uid=" + String.valueOf(getUid()) + ", ")
       .append("assistant_type=" + String.valueOf(getAssistantType()) + ", ")
       .append("chat_message_list=" + String.valueOf(getChatMessageList()) + ", ")
-      .append("fav=" + String.valueOf(getFav()) + ", ")
       .append("user_id=" + String.valueOf(getUserId()) + ", ")
+      .append("fav=" + String.valueOf(getFav()) + ", ")
       .append("createdAt=" + String.valueOf(getCreatedAt()) + ", ")
       .append("updatedAt=" + String.valueOf(getUpdatedAt()))
       .append("}")
       .toString();
   }
   
-  public static UidStep builder() {
+  public static AssistantTypeStep builder() {
       return new Builder();
   }
   
@@ -155,64 +145,55 @@ public final class ChatHistoryRemote implements Model {
       null,
       null,
       null,
-      null,
       null
     );
   }
   
   public CopyOfBuilder copyOfBuilder() {
     return new CopyOfBuilder(id,
-      uid,
       assistant_type,
       chat_message_list,
-      fav,
-      user_id);
+      user_id,
+      fav);
   }
-  public interface UidStep {
-    AssistantTypeStep uid(Integer uid);
-  }
-  
-
   public interface AssistantTypeStep {
-    FavStep assistantType(String assistantType);
-  }
-  
-
-  public interface FavStep {
-    UserIdStep fav(Integer fav);
+    UserIdStep assistantType(String assistantType);
   }
   
 
   public interface UserIdStep {
-    BuildStep userId(String userId);
+    FavStep userId(String userId);
+  }
+  
+
+  public interface FavStep {
+    BuildStep fav(Integer fav);
   }
   
 
   public interface BuildStep {
     ChatHistoryRemote build();
     BuildStep id(String id);
-    BuildStep chatMessageList(List<String> chatMessageList);
+    BuildStep chatMessageList(List<ChatMessageObject> chatMessageList);
   }
   
 
-  public static class Builder implements UidStep, AssistantTypeStep, FavStep, UserIdStep, BuildStep {
+  public static class Builder implements AssistantTypeStep, UserIdStep, FavStep, BuildStep {
     private String id;
-    private Integer uid;
     private String assistant_type;
-    private Integer fav;
     private String user_id;
-    private List<String> chat_message_list;
+    private Integer fav;
+    private List<ChatMessageObject> chat_message_list;
     public Builder() {
       
     }
     
-    private Builder(String id, Integer uid, String assistant_type, List<String> chat_message_list, Integer fav, String user_id) {
+    private Builder(String id, String assistant_type, List<ChatMessageObject> chat_message_list, String user_id, Integer fav) {
       this.id = id;
-      this.uid = uid;
       this.assistant_type = assistant_type;
       this.chat_message_list = chat_message_list;
-      this.fav = fav;
       this.user_id = user_id;
+      this.fav = fav;
     }
     
     @Override
@@ -221,43 +202,35 @@ public final class ChatHistoryRemote implements Model {
         
         return new ChatHistoryRemote(
           id,
-          uid,
           assistant_type,
           chat_message_list,
-          fav,
-          user_id);
+          user_id,
+          fav);
     }
     
     @Override
-     public AssistantTypeStep uid(Integer uid) {
-        Objects.requireNonNull(uid);
-        this.uid = uid;
-        return this;
-    }
-    
-    @Override
-     public FavStep assistantType(String assistantType) {
+     public UserIdStep assistantType(String assistantType) {
         Objects.requireNonNull(assistantType);
         this.assistant_type = assistantType;
         return this;
     }
     
     @Override
-     public UserIdStep fav(Integer fav) {
-        Objects.requireNonNull(fav);
-        this.fav = fav;
-        return this;
-    }
-    
-    @Override
-     public BuildStep userId(String userId) {
+     public FavStep userId(String userId) {
         Objects.requireNonNull(userId);
         this.user_id = userId;
         return this;
     }
     
     @Override
-     public BuildStep chatMessageList(List<String> chatMessageList) {
+     public BuildStep fav(Integer fav) {
+        Objects.requireNonNull(fav);
+        this.fav = fav;
+        return this;
+    }
+    
+    @Override
+     public BuildStep chatMessageList(List<ChatMessageObject> chatMessageList) {
         this.chat_message_list = chatMessageList;
         return this;
     }
@@ -274,17 +247,11 @@ public final class ChatHistoryRemote implements Model {
   
 
   public final class CopyOfBuilder extends Builder {
-    private CopyOfBuilder(String id, Integer uid, String assistantType, List<String> chatMessageList, Integer fav, String userId) {
-      super(id, uid, assistant_type, chat_message_list, fav, user_id);
-      Objects.requireNonNull(uid);
+    private CopyOfBuilder(String id, String assistantType, List<ChatMessageObject> chatMessageList, String userId, Integer fav) {
+      super(id, assistant_type, chat_message_list, user_id, fav);
       Objects.requireNonNull(assistant_type);
-      Objects.requireNonNull(fav);
       Objects.requireNonNull(user_id);
-    }
-    
-    @Override
-     public CopyOfBuilder uid(Integer uid) {
-      return (CopyOfBuilder) super.uid(uid);
+      Objects.requireNonNull(fav);
     }
     
     @Override
@@ -293,17 +260,17 @@ public final class ChatHistoryRemote implements Model {
     }
     
     @Override
-     public CopyOfBuilder fav(Integer fav) {
-      return (CopyOfBuilder) super.fav(fav);
-    }
-    
-    @Override
      public CopyOfBuilder userId(String userId) {
       return (CopyOfBuilder) super.userId(userId);
     }
     
     @Override
-     public CopyOfBuilder chatMessageList(List<String> chatMessageList) {
+     public CopyOfBuilder fav(Integer fav) {
+      return (CopyOfBuilder) super.fav(fav);
+    }
+    
+    @Override
+     public CopyOfBuilder chatMessageList(List<ChatMessageObject> chatMessageList) {
       return (CopyOfBuilder) super.chatMessageList(chatMessageList);
     }
   }
