@@ -14,6 +14,10 @@ import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.ChatMessageObject
 import com.amplifyframework.datastore.generated.model.OpenAi
 import com.amplifyframework.kotlin.core.Amplify
+import com.bootsnip.aichat.db.ChatHistory
+import com.bootsnip.aichat.db.ChatHistoryDao
+import com.bootsnip.aichat.db.ChatHistoryUpdate
+import com.bootsnip.aichat.db.ChatHistoryUpdateFav
 import com.bootsnip.aichat.service.IApiService
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -28,8 +32,10 @@ import javax.inject.Inject
 
 class AiRepo @Inject constructor(
     private val service: IApiService,
-    private val ioDispatcher: CoroutineDispatcher
+    private val ioDispatcher: CoroutineDispatcher,
+    private val chatHistoryDao: ChatHistoryDao
 ) : IAiRepo {
+
     override suspend fun gtpChatResponse(
         query: List<ChatMessage>,
         openAiAuth: String
@@ -47,6 +53,33 @@ class AiRepo @Inject constructor(
             OpenAI(openAiAuth).chatCompletion(service.getGPTResponse(completeQuery.toList()))
         }
 
+    //region room db functions
+    override fun getAllChatHistory() =
+        chatHistoryDao.getAllChatHistoryDistinct()
+
+    override fun getAllFavChatHistory() =
+        chatHistoryDao.getAllFavChatHistoryDistinct()
+    override suspend fun updateChatHistory(
+        chatHistoryUpdate: ChatHistoryUpdate
+    ) =
+        withContext(ioDispatcher) {
+            chatHistoryDao.updateChatHistory(chatHistoryUpdate)
+        }
+
+    override suspend fun updateChatHistoryFavStatus(
+        chatHistoryUpdateFav: ChatHistoryUpdateFav
+    ) =
+        withContext(ioDispatcher) {
+            chatHistoryDao.updateChatHistoryFavStatus(chatHistoryUpdateFav)
+        }
+
+    override fun insertChatHistory(chatHistory: ChatHistory) =
+        chatHistoryDao.insertChatHistory(chatHistory)
+
+    override suspend fun deleteChatHistory(id: Int) =
+        withContext(ioDispatcher) {
+            chatHistoryDao.deleteChatHistory(id)
+        }
 
     //region amplify
     override suspend fun fetchAuthSession(): AuthSession =
@@ -69,14 +102,14 @@ class AiRepo @Inject constructor(
             Amplify.Auth.getCurrentUser()
         }
 
-    override suspend fun observeChatHistory(): Flow<DataStoreItemChange<ChatHistoryRemote>> =
+    override suspend fun observeChatHistory(userId: String): Flow<DataStoreItemChange<ChatHistoryRemote>> =
         withContext(ioDispatcher) {
-            Amplify.DataStore.observe(ChatHistoryRemote::class)
+            Amplify.DataStore.observe(ChatHistoryRemote::class, ChatHistoryRemote.USER_ID.eq(userId))
         }
 
-    override suspend fun queryChatHistory(): Flow<ChatHistoryRemote> =
+    override suspend fun queryChatHistory(userId: String): Flow<ChatHistoryRemote> =
         withContext(ioDispatcher) {
-            Amplify.DataStore.query(ChatHistoryRemote::class)
+            Amplify.DataStore.query(ChatHistoryRemote::class, Where.matches(ChatHistoryRemote.USER_ID.eq(userId)))
         }
 
     override suspend fun saveChatHistory(chatHistoryRemote: ChatHistoryRemote) {
@@ -100,12 +133,29 @@ class AiRepo @Inject constructor(
             Amplify.DataStore.query(ChatHistoryRemote::class, Where.matches(ChatHistoryRemote.FAV.gt(1)))
         }
 
-    override suspend fun updateChatHistory(chatList: List<ChatMessageObject>, id: String) {
+    override suspend fun updateChatHistoryRemote(chatHistoryRemote: ChatHistoryRemote) {
+        Amplify.DataStore.query(ChatHistoryRemote::class, Where.matches(ChatHistoryRemote.LOCAL_DB_ID.eq(chatHistoryRemote.localDbId)))
+            .catch { Log.e("Chat History", "Query failed", it) }
+            .map {
+                it.copyOfBuilder()
+                    .assistantType(chatHistoryRemote.assistantType)
+                    .chatMessageList(chatHistoryRemote.chatMessageList)
+                    .userId(chatHistoryRemote.userId)
+                    .fav(chatHistoryRemote.fav)
+                    .localDbId(chatHistoryRemote.localDbId)
+                    .build()
+            }
+            .onEach { Amplify.DataStore.save(it) }
+            .catch { Log.e("Chat History", "Update failed", it) }
+            .collect { Log.i("Chat History", "Updated a post") }
+    }
+
+    override suspend fun updateChatHistoryUserId(userId: String, id: String) {
         Amplify.DataStore.query(ChatHistoryRemote::class, Where.identifier(ChatHistoryRemote::class.java, id))
             .catch { Log.e("Chat History", "Query failed", it) }
             .map {
                 it.copyOfBuilder()
-                    .chatMessageList(chatList)
+                    .userId(userId)
                     .build()
             }
             .onEach { Amplify.DataStore.save(it) }

@@ -29,10 +29,13 @@ fun ChatHistoryScreen(
 ) {
 
     LaunchedEffect(Unit) {
-        viewModel.queryChatHistory()
+        viewModel.getAllChatHistory()
+        viewModel.getFavChatHistory()
+        viewModel.fetchAuthSession()
     }
 
-    val chatHistoryList = viewModel.chatHistoryRemote.collectAsStateWithLifecycle().value
+    val chatHistoryList = viewModel.chatHistory.collectAsStateWithLifecycle().value
+    val favChatHistoryList = viewModel.favChatHistory.collectAsStateWithLifecycle().value
     val pagerState = rememberPagerState(
         pageCount = { 2 }
     )
@@ -84,7 +87,7 @@ fun ChatHistoryScreen(
             if (page == 0) {
                 AllChatHistoryScreen(chatHistoryList = chatHistoryList, navController, viewModel)
             } else {
-               FavChatHistoryScreen(chatHistoryList = emptyList(), navController, viewModel)
+               FavChatHistoryScreen(chatHistoryList = favChatHistoryList, navController, viewModel)
             }
         }
     }

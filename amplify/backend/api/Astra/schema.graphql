@@ -3,12 +3,13 @@ type ChatMessageObject {
   content: String!
 }
 
-type ChatHistoryRemote @model @auth(rules: [{allow: public}, {allow: private}]) {
+type ChatHistoryRemote @model @auth(rules: [{allow: public}]) {
   id: ID!
   assistant_type: String!
   chat_message_list: [ChatMessageObject!]
-  user_id: ID!
+  user_id: String!
   fav: Int!
+  local_db_id: String!
 }
 
 type OpenAi @model @auth(rules: [{allow: public}]) {

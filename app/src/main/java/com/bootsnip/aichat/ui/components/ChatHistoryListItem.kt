@@ -19,6 +19,7 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.bootsnip.aichat.R
+import com.bootsnip.aichat.db.ChatHistoryUpdateFav
 import com.bootsnip.aichat.ui.theme.Orange
 import com.bootsnip.aichat.viewmodel.AstraViewModel
 
@@ -26,7 +27,7 @@ import com.bootsnip.aichat.viewmodel.AstraViewModel
 fun ChatHistoryListItem(
     modifier: Modifier,
     placeHolder: String,
-    id: String,
+    id: Int,
     isFav: Boolean = false,
     viewModel: AstraViewModel = hiltViewModel()
 ) {
@@ -70,7 +71,12 @@ fun ChatHistoryListItem(
                 }
                 .padding(start = 8.dp)
                 .clickable {
-
+                    viewModel.updateChatHistoryStatus(
+                        ChatHistoryUpdateFav(
+                            uid = id,
+                            fav = if(isFav) 0 else 1
+                        )
+                    )
                 },
             imageVector = Icons.Default.Star,
             contentDescription = "",

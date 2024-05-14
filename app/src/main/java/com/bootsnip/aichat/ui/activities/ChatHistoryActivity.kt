@@ -24,7 +24,7 @@ class ChatHistoryActivity : ComponentActivity() {
         }
     }
 
-    private fun navigateBackWithResult(closeDrawer: Boolean, uid: String) {
+    private fun navigateBackWithResult(closeDrawer: Boolean, uid: Int) {
         if (closeDrawer) {
             val intent = Intent(
                 this,

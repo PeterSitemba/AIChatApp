@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -41,7 +42,7 @@ fun ChatHistoryNavGraph(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     viewModel: AstraViewModel = hiltViewModel(),
-    navigateToHome: (Boolean, String) -> Unit
+    navigateToHome: (Boolean, Int) -> Unit
 ) {
 
     val currentNavBackStackEntry by navController.currentBackStackEntryAsState()
@@ -49,8 +50,8 @@ fun ChatHistoryNavGraph(
 
     val uid = viewModel.selectedChatHistory.collectAsStateWithLifecycle().value
 
-    val chatHistory = viewModel.chatHistoryRemote.collectAsStateWithLifecycle().value.find {
-        it.id == uid
+    val chatHistory = viewModel.chatHistory.collectAsStateWithLifecycle().value.find {
+        it.uid == uid
     }
 
     Scaffold(
@@ -79,7 +80,7 @@ fun ChatHistoryNavGraph(
                         if (currentRoute == AllDestinations.CHAT_HISTORY_DETAIL) {
                             navController.popBackStack()
                         } else {
-                            navigateToHome(false, "")
+                            navigateToHome(false, 0)
                         }
                     }, content = {
                         Icon(

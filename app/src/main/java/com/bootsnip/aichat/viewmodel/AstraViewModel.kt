@@ -11,15 +11,21 @@ import com.amplifyframework.auth.options.AuthFetchSessionOptions
 import com.amplifyframework.auth.result.AuthSessionResult
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.ChatMessageObject
+import com.bootsnip.aichat.db.ChatHistory
+import com.bootsnip.aichat.db.ChatHistoryUpdate
+import com.bootsnip.aichat.db.ChatHistoryUpdateFav
+import com.bootsnip.aichat.model.AstraChatMessage
 import com.bootsnip.aichat.repo.IAiRepo
 import com.bootsnip.aichat.util.AssistantType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -33,31 +39,37 @@ class AstraViewModel @Inject constructor(
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
+    private val _chatHistory: MutableStateFlow<List<ChatHistory>> =
+        MutableStateFlow(mutableListOf())
+    val chatHistory = _chatHistory.asStateFlow()
+
+    private val _favChatHistory: MutableStateFlow<List<ChatHistory>> =
+        MutableStateFlow(mutableListOf())
+    val favChatHistory = _favChatHistory.asStateFlow()
+
     private val _chatHistoryRemote: MutableStateFlow<List<ChatHistoryRemote>> =
         MutableStateFlow(mutableListOf())
     val chatHistoryRemote = _chatHistoryRemote.asStateFlow()
 
-    private val _favChatHistoryRemote: MutableStateFlow<List<ChatHistoryRemote>> =
-        MutableStateFlow(mutableListOf())
-    val favChatHistoryRemote = _favChatHistoryRemote.asStateFlow()
+    private val currentRowId: MutableStateFlow<Long?> = MutableStateFlow(null)
 
-    private val currentRowId: MutableStateFlow<String?> = MutableStateFlow(null)
-
-    val selectedChatHistory: MutableStateFlow<String?> = MutableStateFlow(null)
+    val selectedChatHistory: MutableStateFlow<Int?> = MutableStateFlow(null)
 
     private val openAiAuth: MutableStateFlow<String> = MutableStateFlow("")
 
     private val currentUserId: MutableStateFlow<String?> = MutableStateFlow(null)
 
+    private val identity: MutableStateFlow<String?> = MutableStateFlow(null)
+
+    private val isSignedIn: MutableStateFlow<Boolean> = MutableStateFlow(false)
+
     private var isUpdate: Boolean = false
 
     init {
-        fetchAuthSession()
-        AuthFetchSessionOptions.builder().forceRefresh(true).build()
         queryOpenAi()
+        //fetchAuthSession()
         if (openAiAuth.value.isEmpty()) observeOpenAi()
-        getCurrentUser()
-        observeChatHistory()
+        getAllChatHistory()
     }
 
     fun getGPTResponse(gptQuery: String) {
@@ -89,7 +101,7 @@ class AstraViewModel @Inject constructor(
                     )
                 }
 
-                insertOrUpdateDbRemote()
+                insertOrUpdateDb()
 
                 Log.d("GPT RESPONSE ID", response.id)
                 _isLoading.value = false
@@ -101,52 +113,92 @@ class AstraViewModel @Inject constructor(
         }
     }
 
-
-    private fun insertOrUpdateDbRemote() {
+    private fun insertOrUpdateDb() {
         val chatList = chatList.value.map { chatMessage ->
-            ChatMessageObject.builder()
-                .role(chatMessage.role.role)
-                .content(chatMessage.content)
-                .build()
+            AstraChatMessage(
+                chatMessage.role,
+                chatMessage.content
+            )
         }
 
         if (isUpdate) {
-            updateChatHistory(chatList)
+            val chatHistoryUpdate = ChatHistoryUpdate(
+                currentRowId.value?.toInt(),
+                chatList
+            )
+            updateChatHistory(chatHistoryUpdate)
         } else {
-            val chatHistoryRemote = ChatHistoryRemote.builder()
-                .assistantType(AssistantType.GPT35TURBO.assistantType)
-                .userId(currentUserId.value ?: "")
-                .fav(0)
-                .chatMessageList(chatList)
-                .build()
-            saveChatHistory(chatHistoryRemote)
+            val chatHistory = ChatHistory(
+                assistantType = AssistantType.GPT35TURBO.assistantType,
+                chatMessageList = chatList,
+                fav = 0
+            )
+            insertChatHistory(chatHistory)
         }
-        observeChatHistory()
+        getAllChatHistory()
+    }
+
+    private fun insertChatHistory(chatHistory: ChatHistory) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                currentRowId.value = repo.insertChatHistory(chatHistory)
+                getAllChatHistory()
+            }
+        }
+    }
+
+    fun getAllChatHistory() {
+        viewModelScope.launch {
+            repo.getAllChatHistory().collectLatest {
+                _chatHistory.value = it
+            }
+        }
+    }
+
+    fun getFavChatHistory() {
+        viewModelScope.launch {
+            repo.getAllFavChatHistory().collectLatest {
+                _favChatHistory.value = it
+            }
+        }
+    }
+
+    private fun updateChatHistory(chatHistoryUpdate: ChatHistoryUpdate) {
+        viewModelScope.launch {
+            repo.updateChatHistory(chatHistoryUpdate)
+        }
+    }
+
+    fun updateChatHistoryStatus(chatHistoryUpdateFav: ChatHistoryUpdateFav) {
+        viewModelScope.launch {
+            repo.updateChatHistoryFavStatus(chatHistoryUpdateFav)
+        }
+    }
+
+    fun deleteChatHistory(id: Int) {
+        viewModelScope.launch {
+            repo.deleteChatHistory(id)
+        }
     }
 
     fun startNewChat() {
         chatList.value = mutableListOf()
-        currentRowId.value = ""
+        currentRowId.value = null
     }
 
-    fun continueChat(uid: String) {
-        chatList.value = mutableListOf()
-
-        val chatHistory = chatHistoryRemote.value.find {
-            it.id == uid
+    fun continueChat(uid: Int) {
+        val chatHistory = chatHistory.value.find {
+            it.uid == uid
         }
 
-        val list = chatHistory?.chatMessageList?.toMutableList()?.map {
+        chatList.value = chatHistory?.chatMessageList?.map {
             ChatMessage(
-                ChatRole(it.role),
+                it.role,
                 it.content
             )
         }?.toMutableList() ?: mutableListOf()
 
-        Log.i("ChatHistory List", list.toString())
-
-        chatList.value = list
-        currentRowId.value = uid
+        currentRowId.value = uid.toLong()
     }
 
     private fun queryOpenAi() {
@@ -173,11 +225,15 @@ class AstraViewModel @Inject constructor(
         }
     }
 
-    private fun fetchAuthSession() {
+    fun fetchAuthSession() {
         viewModelScope.launch {
             val response = repo.fetchAuthSession() as AWSCognitoAuthSession
+            isSignedIn.value = response.isSignedIn
+            if(isSignedIn.value) getCurrentUser()
+            Log.i("IS SIGNED IN", isSignedIn.value.toString())
             when (response.identityIdResult.type) {
                 AuthSessionResult.Type.SUCCESS -> {
+                    identity.value = response.identityIdResult.value
                     Log.i("Auth Session", "IdentityId = ${response.identityIdResult.value}")
                     Log.i(
                         "Auth Session",
@@ -185,8 +241,11 @@ class AstraViewModel @Inject constructor(
                     )
                 }
 
-                AuthSessionResult.Type.FAILURE ->
+                AuthSessionResult.Type.FAILURE -> {
+                    identity.value = null
                     Log.w("Auth Session", "IdentityId not found", response.identityIdResult.error)
+                }
+
             }
         }
     }
@@ -196,50 +255,134 @@ class AstraViewModel @Inject constructor(
             try {
                 val response = repo.getCurrentUser()
                 currentUserId.value = response.userId
+                if(currentUserId.value != null) {
+                    Log.i("CURRENT USER", currentUserId.value.toString())
+                    queryChatHistory()
+                    observeChatHistory()
+                }
             } catch (e: Exception) {
-                Log.e("SignedOut", e.message.toString())
+                Log.e("SignedOut", e.message.toString() + " ${currentUserId.value}")
             }
-
         }
     }
 
-    fun observeChatHistory() {
+    private fun syncChatHistory() {
+        if (isSignedIn.value) {
+            syncChatHistoryDownStream()
+            syncChatHistoryUpstream()
+        }
+    }
+
+    private fun syncChatHistoryDownStream() {
+        if (chatHistoryRemote.value.isEmpty()) return
+        for (chatHistoryRemote in chatHistoryRemote.value) {
+            Log.i("SYNC CHAT HISTORY DOWNSTREAM", chatHistoryRemote.toString())
+            val chatHistoryLocal =
+                chatHistory.value.find { it.cloudSyncId == chatHistoryRemote.localDbId }
+
+            val chatList = chatHistoryRemote.chatMessageList.map {
+                AstraChatMessage(
+                    ChatRole(it.role),
+                    it.content
+                )
+            }
+
+            if (chatHistory.value.isEmpty() || chatHistoryLocal == null) {
+                insertChatHistory(
+                    ChatHistory(
+                        assistantType = chatHistoryRemote.assistantType,
+                        chatMessageList = chatList,
+                        fav = chatHistoryRemote.fav,
+                        cloudSyncId = chatHistoryRemote.localDbId
+                    )
+                )
+            }
+        }
+    }
+
+    private fun syncChatHistoryUpstream() {
+        if (chatHistory.value.isEmpty()) return
+
+        for (chatHistoryLocal in chatHistory.value) {
+            Log.i("SYNC CHAT HISTORY UPSTREAM", chatHistoryLocal.toString())
+            updateChatHistoryRemote(
+                ChatHistoryRemote.builder()
+                    .assistantType(chatHistoryLocal.assistantType)
+                    .userId(currentUserId.value)
+                    .fav(chatHistoryLocal.fav)
+                    .localDbId(chatHistoryLocal.cloudSyncId)
+                    .chatMessageList(
+                        chatHistoryLocal.chatMessageList?.map {
+                            ChatMessageObject.builder()
+                                .role(it.role.role)
+                                .content(it.content)
+                                .build()
+                        }
+                    ).build()
+            )
+        }
+    }
+
+
+    private fun observeChatHistory() {
         viewModelScope.launch {
             val list = mutableListOf<ChatHistoryRemote>()
-            val response = repo.observeChatHistory()
+            val response = repo.observeChatHistory(currentUserId.value!!)
+            Log.i("Queried Chat", response.toString())
+            Log.i("USER ID", currentUserId.value!!)
             response
-                .catch { Log.e("Chat History", "Error querying chat history", it) }
-                .collectLatest { list.add(it.item()) }
+                .catch { Log.e("Queried Chat", "Error querying chat history", it) }
+                .collectLatest {
+                    list.add(it.item())
+                    Log.i("Chat List", it.item().chatMessageList.first().content)
+                }
             _chatHistoryRemote.value = list.toList()
+            syncChatHistory()
         }
     }
 
     fun queryChatHistory() {
         viewModelScope.launch {
             val list = mutableListOf<ChatHistoryRemote>()
-            val response = repo.queryChatHistory()
+            val response = repo.queryChatHistory(currentUserId.value!!)
+            Log.i("USER ID", currentUserId.value!!)
+
             response
-                .catch { Log.e("Chat History", "Error querying chat history", it) }
-                .collectLatest { list.add(it) }
+                .catch { Log.e("Queried Chat", "Error querying chat history", it) }
+                .collect {
+                    list.add(it)
+                    Log.i("Chat List", it.chatMessageList.first().content)
+                }
             _chatHistoryRemote.value = list.toList()
+            syncChatHistory()
+        }
+    }
+
+    private fun updateChatHistoryRemote(chatHistoryRemote: ChatHistoryRemote) {
+        viewModelScope.launch {
+            repo.updateChatHistoryRemote(chatHistoryRemote)
         }
     }
 
     private fun saveChatHistory(chatHistoryRemote: ChatHistoryRemote) {
         viewModelScope.launch {
-            currentRowId.value = chatHistoryRemote.id
             repo.saveChatHistory(chatHistoryRemote)
-            queryChatHistory()
         }
     }
 
-    private fun updateChatHistory(chatList: List<ChatMessageObject>) {
-        viewModelScope.launch {
-            currentRowId.value?.let {
-                repo.updateChatHistory(chatList, it)
-                queryChatHistory()
+    /*
+
+
+
+
+        private fun updateChatHistoryUserId(userId: String?) {
+            viewModelScope.launch {
+                userId?.let {
+                    for(chatHistory in chatHistoryRemote.value){
+                        if(chatHistory.userId.isNotEmpty()) continue
+                        repo.updateChatHistoryUserId(it, chatHistory.id)
+                    }
+                }
             }
-        }
-    }
-
+        }*/
 }

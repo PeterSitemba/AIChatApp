@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aallam.openai.api.core.Role
 import com.bootsnip.aichat.ui.components.AiChatBox
 import com.bootsnip.aichat.ui.components.UserChatBox
 import com.bootsnip.aichat.ui.theme.Purple40
@@ -30,13 +31,13 @@ import com.bootsnip.aichat.viewmodel.AstraViewModel
 @Composable
 fun ChatHistoryDetailScreen(
     viewModel: AstraViewModel,
-    navigateHome: (String) -> Unit
+    navigateHome: (Int) -> Unit
 ) {
     val listState = rememberLazyListState()
     val uid = viewModel.selectedChatHistory.collectAsStateWithLifecycle().value
 
-    val chatHistory = viewModel.chatHistoryRemote.collectAsStateWithLifecycle().value.find {
-        it.id == uid
+    val chatHistory = viewModel.chatHistory.collectAsStateWithLifecycle().value.find {
+        it.uid == uid
     }
 
     ConstraintLayout(Modifier.fillMaxSize()) {
@@ -56,11 +57,11 @@ fun ChatHistoryDetailScreen(
                 items(chatHistory.chatMessageList!!) {
                     Spacer(modifier = Modifier.height(10.dp))
                     when (it.role) {
-                        "user" -> {
+                        Role("user") -> {
                             UserChatBox(it.content.orEmpty())
                         }
 
-                        "assistant" -> {
+                        Role("assistant") -> {
                             AiChatBox(it.content.orEmpty())
                         }
 

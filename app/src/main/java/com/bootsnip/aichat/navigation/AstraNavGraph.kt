@@ -27,7 +27,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -72,7 +71,7 @@ fun AstraNavGraph(
     val activityResultLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) {
             val closeDrawer = it.data?.getBooleanExtra(CLOSE_DRAWER, false)
-            val uid = it.data?.getStringExtra(UID)
+            val uid = it.data?.getIntExtra(UID, 0)
             if ((closeDrawer != null) && closeDrawer && uid != null) {
                 coroutineScope.launch { drawerState.close() }
                 viewModel.continueChat(uid)

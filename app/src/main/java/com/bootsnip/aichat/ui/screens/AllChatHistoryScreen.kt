@@ -14,8 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.bootsnip.aichat.R
+import com.bootsnip.aichat.db.ChatHistory
 import com.bootsnip.aichat.navigation.AppNavigationActions
 import com.bootsnip.aichat.ui.components.ChatHistoryListItem
 import com.bootsnip.aichat.ui.components.EmptyScreenPlaceholder
@@ -23,7 +23,7 @@ import com.bootsnip.aichat.viewmodel.AstraViewModel
 
 @Composable
 fun AllChatHistoryScreen(
-    chatHistoryList: List<ChatHistoryRemote>,
+    chatHistoryList: List<ChatHistory>,
     navHostController: NavHostController,
     viewModel: AstraViewModel
 ) {
@@ -36,17 +36,17 @@ fun AllChatHistoryScreen(
         EmptyScreenPlaceholder(textPlaceHolder = stringResource(id = R.string.empty_chat_history))
     } else {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(chatHistoryList, key = { chatHistory -> chatHistory.id as Any }) {
+            items(chatHistoryList, key = { chatHistory -> chatHistory.uid as Any }) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 ChatHistoryListItem(
                     modifier = Modifier.clickable{
-                        viewModel.selectedChatHistory.value = it.id
+                        viewModel.selectedChatHistory.value = it.uid!!
                         navigationActions.navigateToChatHistoryDetail()
                     },
                     placeHolder = it.chatMessageList?.get(0)?.content ?: "Message",
                     isFav = it.fav == 1,
-                    id = it.id
+                    id = it.uid!!
                 )
 
                 HorizontalDivider(
