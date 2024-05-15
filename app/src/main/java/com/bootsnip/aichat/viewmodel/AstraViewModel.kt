@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.chat.ChatRole
 import com.amplifyframework.auth.cognito.AWSCognitoAuthSession
-import com.amplifyframework.auth.options.AuthFetchSessionOptions
 import com.amplifyframework.auth.result.AuthSessionResult
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.ChatMessageObject
@@ -22,7 +21,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -258,7 +256,6 @@ class AstraViewModel @Inject constructor(
                 if (currentUserId.value != null) {
                     Log.i("CURRENT USER", currentUserId.value.toString())
                     queryChatHistory()
-                    observeChatHistory()
                 }
             } catch (e: Exception) {
                 Log.e("SignedOut", e.message.toString() + " ${currentUserId.value}")
@@ -304,8 +301,6 @@ class AstraViewModel @Inject constructor(
         if (chatHistory.value.isEmpty()) return
 
         for (chatHistoryLocal in chatHistory.value) {
-            Log.i("SYNC CHAT HISTORY UPSTREAM", chatHistoryLocal.toString())
-
             val chatHistoryRemoteFound = chatHistoryRemote.value.find { it.localDbId == chatHistoryLocal.cloudSyncId }
 
             val chatHistoryRemote = ChatHistoryRemote.builder()
@@ -336,8 +331,6 @@ class AstraViewModel @Inject constructor(
         viewModelScope.launch {
             val list = mutableListOf<ChatHistoryRemote>()
             val response = repo.observeChatHistory(currentUserId.value!!)
-            Log.i("Queried Chat", response.toString())
-            Log.i("USER ID", currentUserId.value!!)
             response
                 .catch { Log.e("Queried Chat", "Error querying chat history", it) }
                 .collectLatest {
@@ -353,7 +346,6 @@ class AstraViewModel @Inject constructor(
         viewModelScope.launch {
             val list = mutableListOf<ChatHistoryRemote>()
             val response = repo.queryChatHistory(currentUserId.value!!)
-            Log.i("USER ID", currentUserId.value!!)
 
             response
                 .catch { Log.e("Queried Chat", "Error querying chat history", it) }
