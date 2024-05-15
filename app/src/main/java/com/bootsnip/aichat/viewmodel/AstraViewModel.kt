@@ -229,7 +229,7 @@ class AstraViewModel @Inject constructor(
         viewModelScope.launch {
             val response = repo.fetchAuthSession() as AWSCognitoAuthSession
             isSignedIn.value = response.isSignedIn
-            if(isSignedIn.value) getCurrentUser()
+            if (isSignedIn.value) getCurrentUser()
             Log.i("IS SIGNED IN", isSignedIn.value.toString())
             when (response.identityIdResult.type) {
                 AuthSessionResult.Type.SUCCESS -> {
@@ -255,7 +255,7 @@ class AstraViewModel @Inject constructor(
             try {
                 val response = repo.getCurrentUser()
                 currentUserId.value = response.userId
-                if(currentUserId.value != null) {
+                if (currentUserId.value != null) {
                     Log.i("CURRENT USER", currentUserId.value.toString())
                     queryChatHistory()
                     observeChatHistory()
@@ -305,21 +305,29 @@ class AstraViewModel @Inject constructor(
 
         for (chatHistoryLocal in chatHistory.value) {
             Log.i("SYNC CHAT HISTORY UPSTREAM", chatHistoryLocal.toString())
-            updateChatHistoryRemote(
-                ChatHistoryRemote.builder()
-                    .assistantType(chatHistoryLocal.assistantType)
-                    .userId(currentUserId.value)
-                    .fav(chatHistoryLocal.fav)
-                    .localDbId(chatHistoryLocal.cloudSyncId)
-                    .chatMessageList(
-                        chatHistoryLocal.chatMessageList?.map {
-                            ChatMessageObject.builder()
-                                .role(it.role.role)
-                                .content(it.content)
-                                .build()
-                        }
-                    ).build()
-            )
+
+            val chatHistoryRemoteFound = chatHistoryRemote.value.find { it.localDbId == chatHistoryLocal.cloudSyncId }
+
+            val chatHistoryRemote = ChatHistoryRemote.builder()
+                .assistantType(chatHistoryLocal.assistantType)
+                .userId(currentUserId.value)
+                .fav(chatHistoryLocal.fav)
+                .localDbId(chatHistoryLocal.cloudSyncId)
+                .chatMessageList(
+                    chatHistoryLocal.chatMessageList?.map {
+                        ChatMessageObject.builder()
+                            .role(it.role.role)
+                            .content(it.content)
+                            .build()
+                    }
+                )
+                .build()
+
+            if(chatHistoryRemoteFound != null) {
+                updateChatHistoryRemote(chatHistoryRemote)
+            } else {
+                saveChatHistory(chatHistoryRemote)
+            }
         }
     }
 
