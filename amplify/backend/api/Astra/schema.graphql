@@ -10,6 +10,7 @@ type ChatHistoryRemote @model @auth(rules: [{allow: public}]) {
   user_id: String!
   fav: Int!
   local_db_id: String!
+  modified_at: AWSTimestamp!
 }
 
 type OpenAi @model @auth(rules: [{allow: public}]) {

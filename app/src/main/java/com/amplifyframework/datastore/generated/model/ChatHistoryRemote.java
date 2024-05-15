@@ -32,12 +32,14 @@ public final class ChatHistoryRemote implements Model {
   public static final QueryField USER_ID = field("ChatHistoryRemote", "user_id");
   public static final QueryField FAV = field("ChatHistoryRemote", "fav");
   public static final QueryField LOCAL_DB_ID = field("ChatHistoryRemote", "local_db_id");
+  public static final QueryField MODIFIED_AT = field("ChatHistoryRemote", "modified_at");
   private final @ModelField(targetType="ID", isRequired = true) String id;
   private final @ModelField(targetType="String", isRequired = true) String assistant_type;
   private final @ModelField(targetType="ChatMessageObject") List<ChatMessageObject> chat_message_list;
   private final @ModelField(targetType="String", isRequired = true) String user_id;
   private final @ModelField(targetType="Int", isRequired = true) Integer fav;
   private final @ModelField(targetType="String", isRequired = true) String local_db_id;
+  private final @ModelField(targetType="AWSTimestamp", isRequired = true) Temporal.Timestamp modified_at;
   private @ModelField(targetType="AWSDateTime", isReadOnly = true) Temporal.DateTime createdAt;
   private @ModelField(targetType="AWSDateTime", isReadOnly = true) Temporal.DateTime updatedAt;
   /** @deprecated This API is internal to Amplify and should not be used. */
@@ -70,6 +72,10 @@ public final class ChatHistoryRemote implements Model {
       return local_db_id;
   }
   
+  public Temporal.Timestamp getModifiedAt() {
+      return modified_at;
+  }
+  
   public Temporal.DateTime getCreatedAt() {
       return createdAt;
   }
@@ -78,13 +84,14 @@ public final class ChatHistoryRemote implements Model {
       return updatedAt;
   }
   
-  private ChatHistoryRemote(String id, String assistant_type, List<ChatMessageObject> chat_message_list, String user_id, Integer fav, String local_db_id) {
+  private ChatHistoryRemote(String id, String assistant_type, List<ChatMessageObject> chat_message_list, String user_id, Integer fav, String local_db_id, Temporal.Timestamp modified_at) {
     this.id = id;
     this.assistant_type = assistant_type;
     this.chat_message_list = chat_message_list;
     this.user_id = user_id;
     this.fav = fav;
     this.local_db_id = local_db_id;
+    this.modified_at = modified_at;
   }
   
   @Override
@@ -101,6 +108,7 @@ public final class ChatHistoryRemote implements Model {
               ObjectsCompat.equals(getUserId(), chatHistoryRemote.getUserId()) &&
               ObjectsCompat.equals(getFav(), chatHistoryRemote.getFav()) &&
               ObjectsCompat.equals(getLocalDbId(), chatHistoryRemote.getLocalDbId()) &&
+              ObjectsCompat.equals(getModifiedAt(), chatHistoryRemote.getModifiedAt()) &&
               ObjectsCompat.equals(getCreatedAt(), chatHistoryRemote.getCreatedAt()) &&
               ObjectsCompat.equals(getUpdatedAt(), chatHistoryRemote.getUpdatedAt());
       }
@@ -115,6 +123,7 @@ public final class ChatHistoryRemote implements Model {
       .append(getUserId())
       .append(getFav())
       .append(getLocalDbId())
+      .append(getModifiedAt())
       .append(getCreatedAt())
       .append(getUpdatedAt())
       .toString()
@@ -131,6 +140,7 @@ public final class ChatHistoryRemote implements Model {
       .append("user_id=" + String.valueOf(getUserId()) + ", ")
       .append("fav=" + String.valueOf(getFav()) + ", ")
       .append("local_db_id=" + String.valueOf(getLocalDbId()) + ", ")
+      .append("modified_at=" + String.valueOf(getModifiedAt()) + ", ")
       .append("createdAt=" + String.valueOf(getCreatedAt()) + ", ")
       .append("updatedAt=" + String.valueOf(getUpdatedAt()))
       .append("}")
@@ -156,6 +166,7 @@ public final class ChatHistoryRemote implements Model {
       null,
       null,
       null,
+      null,
       null
     );
   }
@@ -166,7 +177,8 @@ public final class ChatHistoryRemote implements Model {
       chat_message_list,
       user_id,
       fav,
-      local_db_id);
+      local_db_id,
+      modified_at);
   }
   public interface AssistantTypeStep {
     UserIdStep assistantType(String assistantType);
@@ -184,7 +196,12 @@ public final class ChatHistoryRemote implements Model {
   
 
   public interface LocalDbIdStep {
-    BuildStep localDbId(String localDbId);
+    ModifiedAtStep localDbId(String localDbId);
+  }
+  
+
+  public interface ModifiedAtStep {
+    BuildStep modifiedAt(Temporal.Timestamp modifiedAt);
   }
   
 
@@ -195,24 +212,26 @@ public final class ChatHistoryRemote implements Model {
   }
   
 
-  public static class Builder implements AssistantTypeStep, UserIdStep, FavStep, LocalDbIdStep, BuildStep {
+  public static class Builder implements AssistantTypeStep, UserIdStep, FavStep, LocalDbIdStep, ModifiedAtStep, BuildStep {
     private String id;
     private String assistant_type;
     private String user_id;
     private Integer fav;
     private String local_db_id;
+    private Temporal.Timestamp modified_at;
     private List<ChatMessageObject> chat_message_list;
     public Builder() {
       
     }
     
-    private Builder(String id, String assistant_type, List<ChatMessageObject> chat_message_list, String user_id, Integer fav, String local_db_id) {
+    private Builder(String id, String assistant_type, List<ChatMessageObject> chat_message_list, String user_id, Integer fav, String local_db_id, Temporal.Timestamp modified_at) {
       this.id = id;
       this.assistant_type = assistant_type;
       this.chat_message_list = chat_message_list;
       this.user_id = user_id;
       this.fav = fav;
       this.local_db_id = local_db_id;
+      this.modified_at = modified_at;
     }
     
     @Override
@@ -225,7 +244,8 @@ public final class ChatHistoryRemote implements Model {
           chat_message_list,
           user_id,
           fav,
-          local_db_id);
+          local_db_id,
+          modified_at);
     }
     
     @Override
@@ -250,9 +270,16 @@ public final class ChatHistoryRemote implements Model {
     }
     
     @Override
-     public BuildStep localDbId(String localDbId) {
+     public ModifiedAtStep localDbId(String localDbId) {
         Objects.requireNonNull(localDbId);
         this.local_db_id = localDbId;
+        return this;
+    }
+    
+    @Override
+     public BuildStep modifiedAt(Temporal.Timestamp modifiedAt) {
+        Objects.requireNonNull(modifiedAt);
+        this.modified_at = modifiedAt;
         return this;
     }
     
@@ -274,12 +301,13 @@ public final class ChatHistoryRemote implements Model {
   
 
   public final class CopyOfBuilder extends Builder {
-    private CopyOfBuilder(String id, String assistantType, List<ChatMessageObject> chatMessageList, String userId, Integer fav, String localDbId) {
-      super(id, assistant_type, chat_message_list, user_id, fav, local_db_id);
+    private CopyOfBuilder(String id, String assistantType, List<ChatMessageObject> chatMessageList, String userId, Integer fav, String localDbId, Temporal.Timestamp modifiedAt) {
+      super(id, assistant_type, chat_message_list, user_id, fav, local_db_id, modified_at);
       Objects.requireNonNull(assistant_type);
       Objects.requireNonNull(user_id);
       Objects.requireNonNull(fav);
       Objects.requireNonNull(local_db_id);
+      Objects.requireNonNull(modified_at);
     }
     
     @Override
@@ -300,6 +328,11 @@ public final class ChatHistoryRemote implements Model {
     @Override
      public CopyOfBuilder localDbId(String localDbId) {
       return (CopyOfBuilder) super.localDbId(localDbId);
+    }
+    
+    @Override
+     public CopyOfBuilder modifiedAt(Temporal.Timestamp modifiedAt) {
+      return (CopyOfBuilder) super.modifiedAt(modifiedAt);
     }
     
     @Override

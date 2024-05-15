@@ -8,6 +8,7 @@ import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.chat.ChatRole
 import com.amplifyframework.auth.cognito.AWSCognitoAuthSession
 import com.amplifyframework.auth.result.AuthSessionResult
+import com.amplifyframework.core.model.temporal.Temporal
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.ChatMessageObject
 import com.bootsnip.aichat.db.ChatHistory
@@ -24,6 +25,10 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.sql.Timestamp
+import java.time.Instant
+import java.time.format.DateTimeFormatter
+import java.util.Date
 import javax.inject.Inject
 
 @HiltViewModel
@@ -122,14 +127,16 @@ class AstraViewModel @Inject constructor(
         if (isUpdate) {
             val chatHistoryUpdate = ChatHistoryUpdate(
                 currentRowId.value?.toInt(),
-                chatList
+                chatList,
+                System.currentTimeMillis()
             )
             updateChatHistory(chatHistoryUpdate)
         } else {
             val chatHistory = ChatHistory(
                 assistantType = AssistantType.GPT35TURBO.assistantType,
                 chatMessageList = chatList,
-                fav = 0
+                fav = 0,
+                modifiedAt = System.currentTimeMillis()
             )
             insertChatHistory(chatHistory)
         }
@@ -265,11 +272,13 @@ class AstraViewModel @Inject constructor(
 
     private fun syncChatHistory() {
         if (isSignedIn.value) {
+            getAllChatHistory()
             syncChatHistoryDownStream()
             syncChatHistoryUpstream()
         }
     }
 
+    //TODO("Add timestamp from remote db")
     private fun syncChatHistoryDownStream() {
         if (chatHistoryRemote.value.isEmpty()) return
         for (chatHistoryRemote in chatHistoryRemote.value) {
@@ -285,12 +294,14 @@ class AstraViewModel @Inject constructor(
             }
 
             if (chatHistory.value.isEmpty() || chatHistoryLocal == null) {
+
                 insertChatHistory(
                     ChatHistory(
                         assistantType = chatHistoryRemote.assistantType,
                         chatMessageList = chatList,
                         fav = chatHistoryRemote.fav,
-                        cloudSyncId = chatHistoryRemote.localDbId
+                        cloudSyncId = chatHistoryRemote.localDbId,
+                        modifiedAt = chatHistoryRemote.modifiedAt.secondsSinceEpoch
                     )
                 )
             }
@@ -301,6 +312,7 @@ class AstraViewModel @Inject constructor(
         if (chatHistory.value.isEmpty()) return
 
         for (chatHistoryLocal in chatHistory.value) {
+            Log.i("CHAT LOCAL", chatHistoryLocal.toString())
             val chatHistoryRemoteFound = chatHistoryRemote.value.find { it.localDbId == chatHistoryLocal.cloudSyncId }
 
             val chatHistoryRemote = ChatHistoryRemote.builder()
@@ -308,6 +320,7 @@ class AstraViewModel @Inject constructor(
                 .userId(currentUserId.value)
                 .fav(chatHistoryLocal.fav)
                 .localDbId(chatHistoryLocal.cloudSyncId)
+                .modifiedAt(Temporal.Timestamp(Timestamp(chatHistoryLocal.modifiedAt)))
                 .chatMessageList(
                     chatHistoryLocal.chatMessageList?.map {
                         ChatMessageObject.builder()
@@ -342,7 +355,7 @@ class AstraViewModel @Inject constructor(
         }
     }
 
-    fun queryChatHistory() {
+    private fun queryChatHistory() {
         viewModelScope.launch {
             val list = mutableListOf<ChatHistoryRemote>()
             val response = repo.queryChatHistory(currentUserId.value!!)

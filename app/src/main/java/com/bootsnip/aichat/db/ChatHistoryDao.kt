@@ -15,13 +15,13 @@ interface ChatHistoryDao {
     fun insertChatHistory(chatHistory: ChatHistory): Long
 
     @Transaction
-    @Query("SELECT * FROM chat_history_table ORDER BY uid DESC")
+    @Query("SELECT * FROM chat_history_table ORDER BY modified_at DESC")
     fun getAllChatHistory(): Flow<List<ChatHistory>>
 
     fun getAllChatHistoryDistinct() = getAllChatHistory().distinctUntilChanged()
 
     @Transaction
-    @Query("SELECT * FROM chat_history_table WHERE fav = 1 ORDER BY uid DESC")
+    @Query("SELECT * FROM chat_history_table WHERE fav = 1 ORDER BY modified_at DESC")
     fun getAllFavChatHistory(): Flow<List<ChatHistory>>
 
     fun getAllFavChatHistoryDistinct() = getAllFavChatHistory().distinctUntilChanged()

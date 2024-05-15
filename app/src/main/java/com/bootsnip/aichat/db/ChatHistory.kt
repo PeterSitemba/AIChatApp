@@ -18,7 +18,9 @@ data class ChatHistory(
     val chatMessageList: List<AstraChatMessage>?,
     val fav : Int,
     @ColumnInfo("cloud_sync_id")
-    val cloudSyncId: String = UUID.randomUUID().toString()
+    val cloudSyncId: String = UUID.randomUUID().toString(),
+    @ColumnInfo("modified_at")
+    val modifiedAt: Long
 )
 
 data class ChatHistoryUpdateFav(
@@ -30,5 +32,7 @@ data class ChatHistoryUpdate(
     val uid: Int?,
     @TypeConverters(Converter::class)
     @ColumnInfo("chat_message_list")
-    val chatMessageList: List<AstraChatMessage>?
+    val chatMessageList: List<AstraChatMessage>?,
+    @ColumnInfo("modified_at")
+    val modifiedAt: Long
 )
