@@ -1,6 +1,7 @@
 package com.bootsnip.aichat.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,9 +11,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -25,9 +28,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.theme.DarkGrey
 import com.bootsnip.aichat.ui.theme.Purple80
 
@@ -62,11 +67,20 @@ fun PurchaseSubscriptionScreen(
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
         ) {
+
+            Icon(
+                painter = painterResource(id = R.drawable.professional_hexagon),
+                contentDescription = "pro",
+                modifier = Modifier
+                    .fillMaxWidth().size(60.dp)
+                    .padding(bottom = 8.dp)
+            )
+
             Text(
                 text = "Unlock Pro Features",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
+                    .padding(bottom = 36.dp),
                 textAlign = TextAlign.Center,
                 fontSize = 32.sp
             )

@@ -10,6 +10,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,7 +22,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
@@ -37,15 +41,17 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -57,9 +63,11 @@ import androidx.navigation.compose.rememberNavController
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.activities.ChatHistoryActivity
 import com.bootsnip.aichat.ui.components.AppDrawer
-import com.bootsnip.aichat.ui.screens.PurchaseSubscriptionScreen
+import com.bootsnip.aichat.ui.components.GPTDropDownList
 import com.bootsnip.aichat.ui.screens.AuthenticationScreen
 import com.bootsnip.aichat.ui.screens.HomeScreen
+import com.bootsnip.aichat.ui.screens.PurchaseSubscriptionScreen
+import com.bootsnip.aichat.ui.theme.DarkGrey
 import com.bootsnip.aichat.viewmodel.AstraViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -77,12 +85,18 @@ fun AstraNavGraph(
     viewModel: AstraViewModel = hiltViewModel()
 ) {
 
+    val gptList = viewModel.gptLLMs.collectAsStateWithLifecycle().value
+    val selectedGPTLLM = viewModel.selectedGPTLLM.collectAsStateWithLifecycle().value
     val tokenCount = viewModel.tokensCount.collectAsStateWithLifecycle().value
+    val tokenLocal = viewModel.tokensLocal.collectAsStateWithLifecycle().value
     val showPurchaseScreen = viewModel.showPurchaseScreen.collectAsStateWithLifecycle().value
     val currentNavBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentNavBackStackEntry?.destination?.route ?: AllDestinations.HOME
     val navigationActions = remember(navController) {
         AppNavigationActions(navController)
+    }
+    var showDropDown by remember {
+        mutableStateOf(false)
     }
     val context = LocalContext.current
     val activityResultLauncher =
@@ -95,8 +109,15 @@ fun AstraNavGraph(
             }
         }
 
+    val buttonColors = ButtonDefaults.outlinedButtonColors(
+        containerColor = DarkGrey,
+        contentColor = Color.White,
+        disabledContainerColor = Color.Unspecified,
+        disabledContentColor = Color.Unspecified
+    )
+
     LaunchedEffect(showPurchaseScreen) {
-        if(showPurchaseScreen){
+        if (showPurchaseScreen) {
             navigationActions.navigateToSubscription()
             viewModel.showPurchaseScreen.value = false
         }
@@ -120,6 +141,9 @@ fun AstraNavGraph(
                         navigationActions.navigateToAuthentication()
 
                     },
+                    navigateToSubscription = {
+                        navigationActions.navigateToSubscription()
+                    },
                     closeDrawer = { coroutineScope.launch { drawerState.close() } },
                     modifier = Modifier
                 )
@@ -134,10 +158,42 @@ fun AstraNavGraph(
                     title = {
                         when (currentRoute) {
                             AllDestinations.HOME -> {
-                                Text(
-                                    text = stringResource(id = R.string.app_name),
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Column {
+                                    Button(
+                                        onClick = { showDropDown = true },
+                                        contentPadding = PaddingValues(
+                                            bottom = 8.dp,
+                                            top = 8.dp,
+                                            start = 12.dp,
+                                            end = 4.dp
+                                        ),
+                                        colors = buttonColors
+                                    ) {
+                                        Text(text = selectedGPTLLM?.displayName ?: "GPT-3.5")
+
+                                        Icon(
+                                            Icons.Default.KeyboardArrowDown,
+                                            contentDescription = "",
+                                            modifier = Modifier.padding(start = 4.dp)
+                                        )
+                                    }
+
+                                    GPTDropDownList(
+                                        llmList = gptList.toList(),
+                                        expanded = showDropDown,
+                                        unlimited = tokenLocal.firstOrNull()?.unlimited ?: false,
+                                        showDropDown = { showDropDown = it },
+                                        selectedLLM = { selectedLLM, subscribed ->
+                                            val isUnlimited =
+                                                tokenLocal.firstOrNull()?.unlimited ?: false
+                                            if (isUnlimited) {
+                                                viewModel.setSelectedLLM(selectedLLM)
+                                            } else {
+                                                viewModel.showPurchaseScreen.value = subscribed
+                                            }
+                                        }
+                                    )
+                                }
                             }
                         }
                     },
@@ -259,6 +315,7 @@ fun AstraNavGraph(
                                 scaleOut(targetScale = 0.92f, animationSpec = tween(90)) +
                                         fadeOut(animationSpec = tween(90))
                             }
+
                             else -> null
                         }
                     }
@@ -276,6 +333,7 @@ fun AstraNavGraph(
                                 scaleOut(targetScale = 0.92f, animationSpec = tween(90)) +
                                         fadeOut(animationSpec = tween(90))
                             }
+
                             else -> null
                         }
                     }
@@ -288,40 +346,44 @@ fun AstraNavGraph(
                     enterTransition = {
                         when (initialState.destination.route) {
                             AllDestinations.HOME -> {
-                                slideInVertically (animationSpec = tween(500)) {fullHeight ->
+                                slideInVertically(animationSpec = tween(500)) { fullHeight ->
                                     fullHeight
                                 }
                             }
+
                             else -> null
                         }
                     },
                     exitTransition = {
                         when (targetState.destination.route) {
                             AllDestinations.HOME -> {
-                                slideOutVertically (animationSpec = tween(500)){fullHeight ->
+                                slideOutVertically(animationSpec = tween(500)) { fullHeight ->
                                     fullHeight
                                 }
                             }
+
                             else -> null
                         }
                     },
                     popEnterTransition = {
                         when (initialState.destination.route) {
                             AllDestinations.HOME -> {
-                                slideInVertically (animationSpec = tween(500)){ height ->
+                                slideInVertically(animationSpec = tween(500)) { height ->
                                     height
                                 }
                             }
+
                             else -> null
                         }
                     },
                     popExitTransition = {
                         when (targetState.destination.route) {
                             AllDestinations.HOME -> {
-                                slideOutVertically (animationSpec = tween(500)){fullHeight ->
+                                slideOutVertically(animationSpec = tween(500)) { fullHeight ->
                                     fullHeight
                                 }
                             }
+
                             else -> null
                         }
                     }

@@ -39,6 +39,7 @@ fun AppDrawer(
     navigateToHome: () -> Unit = {},
     navigateToChatHistory: () -> Unit = {},
     navigateToAuthentication: () -> Unit = {},
+    navigateToSubscription: () -> Unit = {},
     closeDrawer: () -> Unit = {}
 ) {
     ModalDrawerSheet(modifier = Modifier.requiredWidth(250.dp)) {
@@ -78,6 +79,17 @@ fun AppDrawer(
                 closeDrawer()
             },
             icon = { Icon(Icons.Default.Person, contentDescription = null) },
+            shape = MaterialTheme.shapes.small
+        )
+
+        NavigationDrawerItem(
+            label = { Text(text = "Unlock Pro Features", style = MaterialTheme.typography.labelSmall) },
+            selected = route == AllDestinations.SUBSCRIPTION,
+            onClick = {
+                navigateToSubscription()
+                closeDrawer()
+            },
+            icon = { Icon(painterResource(id = R.drawable.professional_hexagon), contentDescription = null) },
             shape = MaterialTheme.shapes.small
         )
     }

@@ -9,6 +9,7 @@ import com.aallam.openai.api.chat.ChatRole
 import com.amplifyframework.auth.cognito.AWSCognitoAuthSession
 import com.amplifyframework.auth.result.AuthSessionResult
 import com.amplifyframework.core.model.temporal.Temporal
+import com.amplifyframework.datastore.generated.model.ChatGPTLLMs
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.ChatMessageObject
 import com.amplifyframework.datastore.generated.model.Tokens
@@ -26,6 +27,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.sql.Timestamp
@@ -42,7 +44,8 @@ class AstraViewModel @Inject constructor(
 
     val chatList: MutableStateFlow<MutableList<ChatMessage>> = MutableStateFlow(mutableListOf())
 
-    val errorChatList: MutableStateFlow<MutableList<ChatMessage>> = MutableStateFlow(mutableListOf())
+    val errorChatList: MutableStateFlow<MutableList<ChatMessage>> =
+        MutableStateFlow(mutableListOf())
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
@@ -65,6 +68,11 @@ class AstraViewModel @Inject constructor(
 
     private val openAiAuth: MutableStateFlow<String> = MutableStateFlow("")
 
+    private val _gptLLMs: MutableStateFlow<MutableSet<ChatGPTLLMs>> =
+        MutableStateFlow(mutableSetOf())
+
+    val gptLLMs = _gptLLMs.asStateFlow()
+
     private val currentUserId: MutableStateFlow<String?> = MutableStateFlow(null)
 
     private val identity: MutableStateFlow<String?> = MutableStateFlow(null)
@@ -73,7 +81,7 @@ class AstraViewModel @Inject constructor(
 
     private val _tokensLocal: MutableStateFlow<List<com.bootsnip.aichat.db.Tokens>> =
         MutableStateFlow(mutableListOf())
-    private val tokensLocal = _tokensLocal.asStateFlow()
+    val tokensLocal = _tokensLocal.asStateFlow()
 
     private val tokensRemote: MutableStateFlow<Tokens?> = MutableStateFlow(null)
 
@@ -85,10 +93,14 @@ class AstraViewModel @Inject constructor(
 
     val showPurchaseScreen: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
+    private val _selectedGPTLLM: MutableStateFlow<ChatGPTLLMs?> = MutableStateFlow(null)
+    val selectedGPTLLM = _selectedGPTLLM.asStateFlow()
+
     private var isUpdate: Boolean = false
 
     init {
         queryOpenAi()
+        queryGPTLLMs()
         fetchSignInState()
         if (openAiAuth.value.isEmpty()) observeOpenAi()
         getAllChatHistory()
@@ -99,8 +111,9 @@ class AstraViewModel @Inject constructor(
     fun getGPTResponse(gptQuery: String) {
         showPurchaseScreen.value = tokensError.value
         _isLoading.value = true
-        if (openAiAuth.value.isEmpty()) {
+        if (openAiAuth.value.isEmpty() || gptLLMs.value.isEmpty()) {
             queryOpenAi()
+            queryGPTLLMs()
             //close loading indicator and display no internet connection error
             return
         }
@@ -123,7 +136,12 @@ class AstraViewModel @Inject constructor(
                     )
                 }
 
-                val response = repo.gtpChatResponse(newQueryList.toList(), openAiAuth.value)
+                val response = repo.gtpChatResponse(
+                    newQueryList.toList(),
+                    openAiAuth.value,
+                    selectedGPTLLM.value?.llmVersion ?: "gpt-3.5-turbo"
+                )
+
                 val message = response.choices.first().message.content.orEmpty()
                 val role = response.choices.first().message.role
 
@@ -230,8 +248,9 @@ class AstraViewModel @Inject constructor(
         viewModelScope.launch {
             repo.getTokens().collectLatest {
                 _tokensLocal.value = it
-                if(tokensLocal.value.isNotEmpty()){
+                if (tokensLocal.value.isNotEmpty()) {
                     _tokensCount.value = tokensLocal.value[0].remainingCount
+
                 }
             }
         }
@@ -347,6 +366,36 @@ class AstraViewModel @Inject constructor(
                     Log.i("OpenAI KEY", "key ${it.item().openAi}")
                     openAiAuth.value = it.item().openAi
                 }
+        }
+    }
+
+    private fun queryGPTLLMs() {
+        viewModelScope.launch {
+            val set = mutableSetOf<ChatGPTLLMs>()
+            val response = repo.queryGPTLLMs()
+            response
+                .catch { Log.e("GPT LLM List", "Error querying GPT LLM List", it) }
+                .collect {
+                    Log.i("GPT LLM List", "llm ${it.llmVersion}")
+                    set.add(it)
+                }
+            _gptLLMs.value = set
+            _selectedGPTLLM.value = gptLLMs.value.firstOrNull()
+        }
+    }
+
+    private fun observeGPTLLMs() {
+        viewModelScope.launch {
+            val set = mutableSetOf<ChatGPTLLMs>()
+            val response = repo.observeGPTLLMs()
+            response
+                .catch { Log.e("GPT LLM List", "Error observing GPT LLM List", it) }
+                .collect {
+                    Log.i("GPT LLM List", "key ${it.item().llmVersion}")
+                    set.add(it.item())
+                }
+            _gptLLMs.value = set
+            _selectedGPTLLM.value = gptLLMs.value.firstOrNull()
         }
     }
 
@@ -524,7 +573,7 @@ class AstraViewModel @Inject constructor(
 
     private fun getChatListWithError(gptQuery: String) {
         viewModelScope.launch {
-            if(tokensError.value){
+            if (tokensError.value) {
                 val newList = chatList.value.toMutableList()
                 errorChatList.value = newList.apply {
                     this.add(
@@ -536,12 +585,17 @@ class AstraViewModel @Inject constructor(
                     this.add(
                         ChatMessage(
                             ChatRole.Assistant,
-                            "Oops, we run into an error. Add tokens"
+                            "Oops, you've run out of tokens for today! Please purchase a subscription to continue enjoying Astra AI."
                         )
                     )
                 }
             }
         }
+    }
+
+    fun setSelectedLLM(llMVersion: String) {
+        val selectLLM = gptLLMs.value.find { it.llmVersion == llMVersion }
+        _selectedGPTLLM.value = selectLLM
     }
 
     /*

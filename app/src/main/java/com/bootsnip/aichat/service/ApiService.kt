@@ -9,9 +9,9 @@ import javax.inject.Inject
 class ApiService @Inject constructor(
     private val client: HttpClient
 ): IApiService {
-    override suspend fun getGPTResponse(gptQuery: List<ChatMessage>): ChatCompletionRequest =
+    override suspend fun getGPTResponse(gptQuery: List<ChatMessage>, modelId: String): ChatCompletionRequest =
         ChatCompletionRequest(
-            model = ModelId("gpt-3.5-turbo"),
+            model = ModelId(modelId),
             messages = gptQuery
         )
 }

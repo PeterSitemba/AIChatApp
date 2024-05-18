@@ -10,6 +10,7 @@ import com.amplifyframework.auth.AuthUser
 import com.amplifyframework.core.model.query.Where
 import com.amplifyframework.datastore.DataStoreException
 import com.amplifyframework.datastore.DataStoreItemChange
+import com.amplifyframework.datastore.generated.model.ChatGPTLLMs
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.OpenAi
 import com.amplifyframework.kotlin.core.Amplify
@@ -41,7 +42,8 @@ class AiRepo @Inject constructor(
 
     override suspend fun gtpChatResponse(
         query: List<ChatMessage>,
-        openAiAuth: String
+        openAiAuth: String,
+        modelId: String
     ): ChatCompletion =
         withContext(ioDispatcher) {
             val completeQuery: MutableList<ChatMessage> = mutableListOf()
@@ -53,7 +55,7 @@ class AiRepo @Inject constructor(
                 )
             )
             completeQuery.addAll(query)
-            OpenAI(openAiAuth).chatCompletion(service.getGPTResponse(completeQuery.toList()))
+            OpenAI(openAiAuth).chatCompletion(service.getGPTResponse(completeQuery.toList(), modelId))
         }
 
     //region room db functions
@@ -111,6 +113,16 @@ class AiRepo @Inject constructor(
     override suspend fun queryDataStore(): Flow<OpenAi> =
         withContext(ioDispatcher) {
             Amplify.DataStore.query(OpenAi::class)
+        }
+
+    override suspend fun observeGPTLLMs(): Flow<DataStoreItemChange<ChatGPTLLMs>> =
+        withContext(ioDispatcher) {
+            Amplify.DataStore.observe(ChatGPTLLMs::class)
+        }
+
+    override suspend fun queryGPTLLMs(): Flow<ChatGPTLLMs> =
+        withContext(ioDispatcher) {
+            Amplify.DataStore.query(ChatGPTLLMs::class)
         }
 
     override suspend fun getCurrentUser(): AuthUser =

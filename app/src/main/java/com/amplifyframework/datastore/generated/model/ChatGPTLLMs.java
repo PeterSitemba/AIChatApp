@@ -27,11 +27,13 @@ import static com.amplifyframework.core.model.query.predicate.QueryField.field;
 })
 public final class ChatGPTLLMs implements Model {
   public static final QueryField ID = field("ChatGPTLLMs", "id");
-  public static final QueryField LLM_VERSIONS = field("ChatGPTLLMs", "llm_versions");
-  public static final QueryField SUBSRIBED = field("ChatGPTLLMs", "subsribed");
+  public static final QueryField LLM_VERSION = field("ChatGPTLLMs", "llm_version");
+  public static final QueryField SUBSCRIBED = field("ChatGPTLLMs", "subscribed");
+  public static final QueryField DISPLAY_NAME = field("ChatGPTLLMs", "display_name");
   private final @ModelField(targetType="ID", isRequired = true) String id;
-  private final @ModelField(targetType="String", isRequired = true) List<String> llm_versions;
-  private final @ModelField(targetType="Boolean", isRequired = true) Boolean subsribed;
+  private final @ModelField(targetType="String", isRequired = true) String llm_version;
+  private final @ModelField(targetType="Boolean", isRequired = true) Boolean subscribed;
+  private final @ModelField(targetType="String") String display_name;
   private @ModelField(targetType="AWSDateTime", isReadOnly = true) Temporal.DateTime createdAt;
   private @ModelField(targetType="AWSDateTime", isReadOnly = true) Temporal.DateTime updatedAt;
   /** @deprecated This API is internal to Amplify and should not be used. */
@@ -44,12 +46,16 @@ public final class ChatGPTLLMs implements Model {
       return id;
   }
   
-  public List<String> getLlmVersions() {
-      return llm_versions;
+  public String getLlmVersion() {
+      return llm_version;
   }
   
-  public Boolean getSubsribed() {
-      return subsribed;
+  public Boolean getSubscribed() {
+      return subscribed;
+  }
+  
+  public String getDisplayName() {
+      return display_name;
   }
   
   public Temporal.DateTime getCreatedAt() {
@@ -60,10 +66,11 @@ public final class ChatGPTLLMs implements Model {
       return updatedAt;
   }
   
-  private ChatGPTLLMs(String id, List<String> llm_versions, Boolean subsribed) {
+  private ChatGPTLLMs(String id, String llm_version, Boolean subscribed, String display_name) {
     this.id = id;
-    this.llm_versions = llm_versions;
-    this.subsribed = subsribed;
+    this.llm_version = llm_version;
+    this.subscribed = subscribed;
+    this.display_name = display_name;
   }
   
   @Override
@@ -75,8 +82,9 @@ public final class ChatGPTLLMs implements Model {
       } else {
       ChatGPTLLMs chatGptllMs = (ChatGPTLLMs) obj;
       return ObjectsCompat.equals(getId(), chatGptllMs.getId()) &&
-              ObjectsCompat.equals(getLlmVersions(), chatGptllMs.getLlmVersions()) &&
-              ObjectsCompat.equals(getSubsribed(), chatGptllMs.getSubsribed()) &&
+              ObjectsCompat.equals(getLlmVersion(), chatGptllMs.getLlmVersion()) &&
+              ObjectsCompat.equals(getSubscribed(), chatGptllMs.getSubscribed()) &&
+              ObjectsCompat.equals(getDisplayName(), chatGptllMs.getDisplayName()) &&
               ObjectsCompat.equals(getCreatedAt(), chatGptllMs.getCreatedAt()) &&
               ObjectsCompat.equals(getUpdatedAt(), chatGptllMs.getUpdatedAt());
       }
@@ -86,8 +94,9 @@ public final class ChatGPTLLMs implements Model {
    public int hashCode() {
     return new StringBuilder()
       .append(getId())
-      .append(getLlmVersions())
-      .append(getSubsribed())
+      .append(getLlmVersion())
+      .append(getSubscribed())
+      .append(getDisplayName())
       .append(getCreatedAt())
       .append(getUpdatedAt())
       .toString()
@@ -99,15 +108,16 @@ public final class ChatGPTLLMs implements Model {
     return new StringBuilder()
       .append("ChatGPTLLMs {")
       .append("id=" + String.valueOf(getId()) + ", ")
-      .append("llm_versions=" + String.valueOf(getLlmVersions()) + ", ")
-      .append("subsribed=" + String.valueOf(getSubsribed()) + ", ")
+      .append("llm_version=" + String.valueOf(getLlmVersion()) + ", ")
+      .append("subscribed=" + String.valueOf(getSubscribed()) + ", ")
+      .append("display_name=" + String.valueOf(getDisplayName()) + ", ")
       .append("createdAt=" + String.valueOf(getCreatedAt()) + ", ")
       .append("updatedAt=" + String.valueOf(getUpdatedAt()))
       .append("}")
       .toString();
   }
   
-  public static LlmVersionsStep builder() {
+  public static LlmVersionStep builder() {
       return new Builder();
   }
   
@@ -123,43 +133,48 @@ public final class ChatGPTLLMs implements Model {
     return new ChatGPTLLMs(
       id,
       null,
+      null,
       null
     );
   }
   
   public CopyOfBuilder copyOfBuilder() {
     return new CopyOfBuilder(id,
-      llm_versions,
-      subsribed);
+      llm_version,
+      subscribed,
+      display_name);
   }
-  public interface LlmVersionsStep {
-    SubsribedStep llmVersions(List<String> llmVersions);
+  public interface LlmVersionStep {
+    SubscribedStep llmVersion(String llmVersion);
   }
   
 
-  public interface SubsribedStep {
-    BuildStep subsribed(Boolean subsribed);
+  public interface SubscribedStep {
+    BuildStep subscribed(Boolean subscribed);
   }
   
 
   public interface BuildStep {
     ChatGPTLLMs build();
     BuildStep id(String id);
+    BuildStep displayName(String displayName);
   }
   
 
-  public static class Builder implements LlmVersionsStep, SubsribedStep, BuildStep {
+  public static class Builder implements LlmVersionStep, SubscribedStep, BuildStep {
     private String id;
-    private List<String> llm_versions;
-    private Boolean subsribed;
+    private String llm_version;
+    private Boolean subscribed;
+    private String display_name;
     public Builder() {
       
     }
     
-    private Builder(String id, List<String> llm_versions, Boolean subsribed) {
+    private Builder(String id, String llm_version, Boolean subscribed, String display_name) {
       this.id = id;
-      this.llm_versions = llm_versions;
-      this.subsribed = subsribed;
+      this.llm_version = llm_version;
+      this.subscribed = subscribed;
+      this.display_name = display_name;
     }
     
     @Override
@@ -168,21 +183,28 @@ public final class ChatGPTLLMs implements Model {
         
         return new ChatGPTLLMs(
           id,
-          llm_versions,
-          subsribed);
+          llm_version,
+          subscribed,
+          display_name);
     }
     
     @Override
-     public SubsribedStep llmVersions(List<String> llmVersions) {
-        Objects.requireNonNull(llmVersions);
-        this.llm_versions = llmVersions;
+     public SubscribedStep llmVersion(String llmVersion) {
+        Objects.requireNonNull(llmVersion);
+        this.llm_version = llmVersion;
         return this;
     }
     
     @Override
-     public BuildStep subsribed(Boolean subsribed) {
-        Objects.requireNonNull(subsribed);
-        this.subsribed = subsribed;
+     public BuildStep subscribed(Boolean subscribed) {
+        Objects.requireNonNull(subscribed);
+        this.subscribed = subscribed;
+        return this;
+    }
+    
+    @Override
+     public BuildStep displayName(String displayName) {
+        this.display_name = displayName;
         return this;
     }
     
@@ -198,20 +220,25 @@ public final class ChatGPTLLMs implements Model {
   
 
   public final class CopyOfBuilder extends Builder {
-    private CopyOfBuilder(String id, List<String> llmVersions, Boolean subsribed) {
-      super(id, llm_versions, subsribed);
-      Objects.requireNonNull(llm_versions);
-      Objects.requireNonNull(subsribed);
+    private CopyOfBuilder(String id, String llmVersion, Boolean subscribed, String displayName) {
+      super(id, llm_version, subscribed, display_name);
+      Objects.requireNonNull(llm_version);
+      Objects.requireNonNull(subscribed);
     }
     
     @Override
-     public CopyOfBuilder llmVersions(List<String> llmVersions) {
-      return (CopyOfBuilder) super.llmVersions(llmVersions);
+     public CopyOfBuilder llmVersion(String llmVersion) {
+      return (CopyOfBuilder) super.llmVersion(llmVersion);
     }
     
     @Override
-     public CopyOfBuilder subsribed(Boolean subsribed) {
-      return (CopyOfBuilder) super.subsribed(subsribed);
+     public CopyOfBuilder subscribed(Boolean subscribed) {
+      return (CopyOfBuilder) super.subscribed(subscribed);
+    }
+    
+    @Override
+     public CopyOfBuilder displayName(String displayName) {
+      return (CopyOfBuilder) super.displayName(displayName);
     }
   }
   

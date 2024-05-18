@@ -5,6 +5,7 @@ import com.aallam.openai.api.chat.ChatMessage
 import com.amplifyframework.auth.AuthSession
 import com.amplifyframework.auth.AuthUser
 import com.amplifyframework.datastore.DataStoreItemChange
+import com.amplifyframework.datastore.generated.model.ChatGPTLLMs
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.OpenAi
 import com.bootsnip.aichat.db.ChatHistory
@@ -15,7 +16,7 @@ import com.bootsnip.aichat.db.TokensUpdate
 import kotlinx.coroutines.flow.Flow
 
 interface IAiRepo {
-    suspend fun gtpChatResponse(query: List<ChatMessage>, openAiAuth: String): ChatCompletion
+    suspend fun gtpChatResponse(query: List<ChatMessage>, openAiAuth: String, modelId: String): ChatCompletion
 
     //region room db chat history
     fun insertChatHistory(chatHistory: ChatHistory): Long
@@ -44,6 +45,10 @@ interface IAiRepo {
     suspend fun observeDataStore(): Flow<DataStoreItemChange<OpenAi>>
 
     suspend fun queryDataStore(): Flow<OpenAi>
+
+    suspend fun observeGPTLLMs(): Flow<DataStoreItemChange<ChatGPTLLMs>>
+
+    suspend fun queryGPTLLMs(): Flow<ChatGPTLLMs>
 
     suspend fun getCurrentUser(): AuthUser
 

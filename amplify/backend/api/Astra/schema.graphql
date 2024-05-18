@@ -5,8 +5,9 @@ type Suggestions @model @auth(rules: [{allow: public}]) {
 
 type ChatGPTLLMs @model @auth(rules: [{allow: public}]) {
   id: ID!
-  llm_versions: [String!]!
-  subsribed: Boolean!
+  llm_version: String!
+  subscribed: Boolean!
+  display_name: String
 }
 
 type TokensRemote @model @auth(rules: [{allow: public}]) {
