@@ -6,16 +6,18 @@ import com.amplifyframework.auth.AuthSession
 import com.amplifyframework.auth.AuthUser
 import com.amplifyframework.datastore.DataStoreItemChange
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
-import com.amplifyframework.datastore.generated.model.ChatMessageObject
 import com.amplifyframework.datastore.generated.model.OpenAi
 import com.bootsnip.aichat.db.ChatHistory
 import com.bootsnip.aichat.db.ChatHistoryUpdate
 import com.bootsnip.aichat.db.ChatHistoryUpdateFav
+import com.bootsnip.aichat.db.Tokens
+import com.bootsnip.aichat.db.TokensUpdate
 import kotlinx.coroutines.flow.Flow
 
 interface IAiRepo {
     suspend fun gtpChatResponse(query: List<ChatMessage>, openAiAuth: String): ChatCompletion
 
+    //region room db chat history
     fun insertChatHistory(chatHistory: ChatHistory): Long
 
     fun getAllChatHistory(): Flow<List<ChatHistory>>
@@ -27,6 +29,14 @@ interface IAiRepo {
     suspend fun updateChatHistoryFavStatus(chatHistoryUpdateFav: ChatHistoryUpdateFav)
 
     suspend fun deleteChatHistory(id: Int)
+
+    //region room db tokens
+
+    suspend fun insertTokens(tokens: Tokens)
+
+    fun getTokens(): Flow<List<Tokens>>
+
+    suspend fun updateLocalTokens(tokensUpdate: TokensUpdate)
 
     //region amplify
     suspend fun fetchAuthSession(): AuthSession

@@ -31,7 +31,7 @@ fun ChatHistoryScreen(
     LaunchedEffect(Unit) {
         viewModel.getAllChatHistory()
         viewModel.getFavChatHistory()
-        viewModel.fetchAuthSession()
+        viewModel.fetchChatHistoryWithAuthSession()
     }
 
     val chatHistoryList = viewModel.chatHistory.collectAsStateWithLifecycle().value

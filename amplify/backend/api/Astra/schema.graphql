@@ -1,3 +1,22 @@
+type Suggestions @model @auth(rules: [{allow: public}]) {
+  id: ID!
+  suggestion: String
+}
+
+type ChatGPTLLMs @model @auth(rules: [{allow: public}]) {
+  id: ID!
+  llm_versions: [String!]!
+  subsribed: Boolean!
+}
+
+type TokensRemote @model @auth(rules: [{allow: public}]) {
+  id: ID!
+  remaining_count: Int!
+  user_id: String!
+  unlimited: Boolean!
+  date: AWSDate!
+}
+
 type ChatMessageObject {
   role: String!
   content: String!

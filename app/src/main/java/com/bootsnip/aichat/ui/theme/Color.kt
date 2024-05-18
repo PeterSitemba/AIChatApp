@@ -13,4 +13,6 @@ val Pink40 = Color(0xFF7D5260)
 
 val Orange = Color(0xFFFFB74D)
 
+val DarkGrey = Color(0xFF36454F)
+
 val backgroundColor = Color(red = 28, green = 27, blue = 31).toArgb()

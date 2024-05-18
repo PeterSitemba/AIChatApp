@@ -11,12 +11,15 @@ import com.amplifyframework.auth.result.AuthSessionResult
 import com.amplifyframework.core.model.temporal.Temporal
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.ChatMessageObject
+import com.amplifyframework.datastore.generated.model.Tokens
 import com.bootsnip.aichat.db.ChatHistory
 import com.bootsnip.aichat.db.ChatHistoryUpdate
 import com.bootsnip.aichat.db.ChatHistoryUpdateFav
+import com.bootsnip.aichat.db.TokensUpdate
 import com.bootsnip.aichat.model.AstraChatMessage
 import com.bootsnip.aichat.repo.IAiRepo
 import com.bootsnip.aichat.util.AssistantType
+import com.bootsnip.aichat.util.DateUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,6 +41,8 @@ class AstraViewModel @Inject constructor(
 ) : AndroidViewModel(application) {
 
     val chatList: MutableStateFlow<MutableList<ChatMessage>> = MutableStateFlow(mutableListOf())
+
+    val errorChatList: MutableStateFlow<MutableList<ChatMessage>> = MutableStateFlow(mutableListOf())
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
@@ -66,20 +71,44 @@ class AstraViewModel @Inject constructor(
 
     private val isSignedIn: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
+    private val _tokensLocal: MutableStateFlow<List<com.bootsnip.aichat.db.Tokens>> =
+        MutableStateFlow(mutableListOf())
+    private val tokensLocal = _tokensLocal.asStateFlow()
+
+    private val tokensRemote: MutableStateFlow<Tokens?> = MutableStateFlow(null)
+
+    private val _tokensError: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val tokensError = _tokensError.asStateFlow()
+
+    private val _tokensCount: MutableStateFlow<Int> = MutableStateFlow(3)
+    val tokensCount = _tokensCount.asStateFlow()
+
+    val showPurchaseScreen: MutableStateFlow<Boolean> = MutableStateFlow(false)
+
     private var isUpdate: Boolean = false
 
     init {
         queryOpenAi()
-        //fetchAuthSession()
+        fetchSignInState()
         if (openAiAuth.value.isEmpty()) observeOpenAi()
         getAllChatHistory()
+        getLocalToken()
+        resolveTokenCount()
     }
 
     fun getGPTResponse(gptQuery: String) {
+        showPurchaseScreen.value = tokensError.value
         _isLoading.value = true
         if (openAiAuth.value.isEmpty()) {
             queryOpenAi()
             //close loading indicator and display no internet connection error
+            return
+        }
+        if (tokensLocal.value.isNotEmpty() && tokensLocal.value[0].remainingCount <= 0) {
+            _tokensError.value = true
+            _isLoading.value = false
+            showPurchaseScreen.value = tokensError.value
+            getChatListWithError(gptQuery)
             return
         }
         viewModelScope.launch {
@@ -87,6 +116,7 @@ class AstraViewModel @Inject constructor(
                 isUpdate = chatList.value.isNotEmpty()
 
                 val newQueryList = chatList.value.toMutableList()
+
                 chatList.value = newQueryList.apply {
                     this.add(
                         ChatMessage(ChatRole.User, gptQuery)
@@ -104,7 +134,8 @@ class AstraViewModel @Inject constructor(
                     )
                 }
 
-                insertOrUpdateDb()
+                insertOrUpdateChatHistoryDb()
+                updateLocalTokenAfterQuery()
 
                 Log.d("GPT RESPONSE ID", response.id)
                 _isLoading.value = false
@@ -116,7 +147,7 @@ class AstraViewModel @Inject constructor(
         }
     }
 
-    private fun insertOrUpdateDb() {
+    private fun insertOrUpdateChatHistoryDb() {
         val chatList = chatList.value.map { chatMessage ->
             AstraChatMessage(
                 chatMessage.role,
@@ -141,6 +172,93 @@ class AstraViewModel @Inject constructor(
             insertChatHistory(chatHistory)
         }
         getAllChatHistory()
+    }
+
+    private fun resolveTokenCount() {
+        if (isSignedIn.value) {
+            if (tokensLocal.value.isEmpty()) {
+                val remoteToken = tokensRemote.value
+                if (remoteToken != null) {
+                    if (remoteToken.unlimited) {
+                        insertFreshToken(true)
+                    } else {
+                        insertFreshToken()
+                    }
+                } else {
+                    insertFreshToken()
+                }
+            } else {
+                val tokenLocal = tokensLocal.value[0]
+                if (!tokenLocal.unlimited) {
+                    if (tokenLocal.date != DateUtil.currentDate()) {
+                        val tokensUpdate = TokensUpdate(
+                            tokenLocal.uid,
+                            3,
+                            false,
+                            DateUtil.currentDate()
+                        )
+                        updateLocalToken(tokensUpdate)
+                    }
+                    Log.i("DATE", tokenLocal.date)
+                    Log.i("DATE", DateUtil.currentDate())
+                }
+            }
+        } else {
+            if (tokensLocal.value.isEmpty()) {
+                insertFreshToken()
+            }
+        }
+    }
+
+    private fun insertFreshToken(unlimited: Boolean = false) {
+        val token = com.bootsnip.aichat.db.Tokens(
+            remainingCount = 3,
+            unlimited = unlimited,
+            date = DateUtil.currentDate()
+        )
+        insertLocalToken(token)
+    }
+
+    private fun insertLocalToken(tokens: com.bootsnip.aichat.db.Tokens) {
+        viewModelScope.launch {
+            repo.insertTokens(tokens)
+            getLocalToken()
+        }
+    }
+
+    private fun getLocalToken() {
+        viewModelScope.launch {
+            repo.getTokens().collectLatest {
+                _tokensLocal.value = it
+                if(tokensLocal.value.isNotEmpty()){
+                    _tokensCount.value = tokensLocal.value[0].remainingCount
+                }
+            }
+        }
+    }
+
+    private fun updateLocalTokenAfterQuery() {
+        val tokenLocal = tokensLocal.value[0]
+        if (!tokenLocal.unlimited) {
+            val tokensUpdate = TokensUpdate(
+                tokenLocal.uid!!,
+                tokenLocal.remainingCount - 1,
+                false,
+                DateUtil.currentDate()
+            )
+            updateLocalToken(tokensUpdate)
+        }
+    }
+
+    private fun updateLocalToken(tokensUpdate: TokensUpdate) {
+        viewModelScope.launch {
+            try {
+                repo.updateLocalTokens(tokensUpdate)
+                getLocalToken()
+            } catch (e: Exception) {
+                Log.e("Error", e.message.toString())
+            }
+        }
     }
 
     private fun insertChatHistory(chatHistory: ChatHistory) {
@@ -188,10 +306,12 @@ class AstraViewModel @Inject constructor(
 
     fun startNewChat() {
         chatList.value = mutableListOf()
+        errorChatList.value = mutableListOf()
         currentRowId.value = null
     }
 
     fun continueChat(uid: Int) {
+        _tokensError.value = false
         val chatHistory = chatHistory.value.find {
             it.uid == uid
         }
@@ -230,11 +350,30 @@ class AstraViewModel @Inject constructor(
         }
     }
 
-    fun fetchAuthSession() {
+    private fun fetchSignInState() {
         viewModelScope.launch {
             val response = repo.fetchAuthSession() as AWSCognitoAuthSession
             isSignedIn.value = response.isSignedIn
-            if (isSignedIn.value) getCurrentUser()
+            fetchCurrentUser()
+        }
+    }
+
+    private fun fetchCurrentUser() {
+        viewModelScope.launch {
+            try {
+                val response = repo.getCurrentUser()
+                currentUserId.value = response.userId
+            } catch (e: Exception) {
+                Log.e("SignedOut", e.message.toString() + " ${currentUserId.value}")
+            }
+        }
+    }
+
+    fun fetchChatHistoryWithAuthSession() {
+        viewModelScope.launch {
+            val response = repo.fetchAuthSession() as AWSCognitoAuthSession
+            isSignedIn.value = response.isSignedIn
+            if (isSignedIn.value) getChatHistoryWithCurrentUser()
             Log.i("IS SIGNED IN", isSignedIn.value.toString())
             when (response.identityIdResult.type) {
                 AuthSessionResult.Type.SUCCESS -> {
@@ -255,7 +394,7 @@ class AstraViewModel @Inject constructor(
         }
     }
 
-    private fun getCurrentUser() {
+    private fun getChatHistoryWithCurrentUser() {
         viewModelScope.launch {
             try {
                 val response = repo.getCurrentUser()
@@ -278,7 +417,6 @@ class AstraViewModel @Inject constructor(
         }
     }
 
-    //TODO("Add timestamp from remote db")
     private fun syncChatHistoryDownStream() {
         if (chatHistoryRemote.value.isEmpty()) return
         for (chatHistoryRemote in chatHistoryRemote.value) {
@@ -313,7 +451,8 @@ class AstraViewModel @Inject constructor(
 
         for (chatHistoryLocal in chatHistory.value) {
             Log.i("CHAT LOCAL", chatHistoryLocal.toString())
-            val chatHistoryRemoteFound = chatHistoryRemote.value.find { it.localDbId == chatHistoryLocal.cloudSyncId }
+            val chatHistoryRemoteFound =
+                chatHistoryRemote.value.find { it.localDbId == chatHistoryLocal.cloudSyncId }
 
             val chatHistoryRemote = ChatHistoryRemote.builder()
                 .assistantType(chatHistoryLocal.assistantType)
@@ -331,7 +470,7 @@ class AstraViewModel @Inject constructor(
                 )
                 .build()
 
-            if(chatHistoryRemoteFound != null) {
+            if (chatHistoryRemoteFound != null) {
                 updateChatHistoryRemote(chatHistoryRemote)
             } else {
                 saveChatHistory(chatHistoryRemote)
@@ -380,6 +519,28 @@ class AstraViewModel @Inject constructor(
     private fun saveChatHistory(chatHistoryRemote: ChatHistoryRemote) {
         viewModelScope.launch {
             repo.saveChatHistory(chatHistoryRemote)
+        }
+    }
+
+    private fun getChatListWithError(gptQuery: String) {
+        viewModelScope.launch {
+            if(tokensError.value){
+                val newList = chatList.value.toMutableList()
+                errorChatList.value = newList.apply {
+                    this.add(
+                        ChatMessage(
+                            ChatRole.User,
+                            gptQuery
+                        )
+                    )
+                    this.add(
+                        ChatMessage(
+                            ChatRole.Assistant,
+                            "Oops, we run into an error. Add tokens"
+                        )
+                    )
+                }
+            }
         }
     }
 

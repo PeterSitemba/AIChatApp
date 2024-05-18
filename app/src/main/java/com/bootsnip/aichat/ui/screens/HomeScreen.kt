@@ -28,6 +28,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -42,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.aallam.openai.api.chat.ChatMessage
+import com.aallam.openai.api.chat.ChatRole
 import com.aallam.openai.api.core.Role
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.components.AiChatBox
@@ -58,6 +61,8 @@ fun HomeScreen(
 ) {
     val gptChatList = viewModel.chatList.collectAsStateWithLifecycle().value
     val isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value
+    val tokenError = viewModel.tokensError.collectAsStateWithLifecycle().value
+    val errorList = viewModel.errorChatList.collectAsStateWithLifecycle().value
     val listState = rememberLazyListState()
     val interactionSource = remember { MutableInteractionSource() }
     var showSuggestionDialog by remember {
@@ -89,7 +94,7 @@ fun HomeScreen(
         val (chatArea, inputField, placeholder) = createRefs()
         var prompt by remember { mutableStateOf("") }
 
-        if (gptChatList.isEmpty()) {
+        if (gptChatList.isEmpty() && errorList.isEmpty()) {
             HomePlaceholder(poweredBy = "Chat GPT", modifier = Modifier.constrainAs(placeholder) {
                 top.linkTo(parent.top)
                 bottom.linkTo(inputField.top)
@@ -109,7 +114,7 @@ fun HomeScreen(
                         height = Dimension.fillToConstraints
                     }
             ) {
-                items(gptChatList) {
+                items(if(tokenError) errorList else gptChatList) {
                     Spacer(modifier = Modifier.height(10.dp))
                     when (it.role) {
                         Role("user") -> {

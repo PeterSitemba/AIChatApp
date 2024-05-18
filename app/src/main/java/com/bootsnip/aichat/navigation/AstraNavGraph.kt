@@ -8,8 +8,16 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddCircle
@@ -22,19 +30,25 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -43,6 +57,7 @@ import androidx.navigation.compose.rememberNavController
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.activities.ChatHistoryActivity
 import com.bootsnip.aichat.ui.components.AppDrawer
+import com.bootsnip.aichat.ui.screens.PurchaseSubscriptionScreen
 import com.bootsnip.aichat.ui.screens.AuthenticationScreen
 import com.bootsnip.aichat.ui.screens.HomeScreen
 import com.bootsnip.aichat.viewmodel.AstraViewModel
@@ -62,6 +77,8 @@ fun AstraNavGraph(
     viewModel: AstraViewModel = hiltViewModel()
 ) {
 
+    val tokenCount = viewModel.tokensCount.collectAsStateWithLifecycle().value
+    val showPurchaseScreen = viewModel.showPurchaseScreen.collectAsStateWithLifecycle().value
     val currentNavBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentNavBackStackEntry?.destination?.route ?: AllDestinations.HOME
     val navigationActions = remember(navController) {
@@ -77,6 +94,13 @@ fun AstraNavGraph(
                 viewModel.continueChat(uid)
             }
         }
+
+    LaunchedEffect(showPurchaseScreen) {
+        if(showPurchaseScreen){
+            navigationActions.navigateToSubscription()
+            viewModel.showPurchaseScreen.value = false
+        }
+    }
 
     ModalNavigationDrawer(
         drawerContent = {
@@ -128,9 +152,10 @@ fun AstraNavGraph(
                                         imageVector = Icons.Default.Menu, contentDescription = null
                                     )
                                 })
+
                             }
 
-                            AllDestinations.AUTHENTICATION -> {
+                            AllDestinations.AUTHENTICATION, AllDestinations.SUBSCRIPTION -> {
                                 IconButton(onClick = {
                                     navController.popBackStack()
                                 }, content = {
@@ -149,6 +174,32 @@ fun AstraNavGraph(
                     actions = {
                         when (currentRoute) {
                             AllDestinations.HOME -> {
+                                OutlinedButton(
+                                    contentPadding = PaddingValues(
+                                        start = 4.dp,
+                                        top = 0.dp,
+                                        end = 4.dp,
+                                        bottom = 0.dp,
+                                    ),
+                                    modifier = Modifier
+                                        .width(60.dp)
+                                        .height(30.dp),
+                                    onClick = {
+                                        navigationActions.navigateToSubscription()
+                                    }
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(text = tokenCount.toString())
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.creation),
+                                            contentDescription = "",
+                                            modifier = Modifier
+                                                .size(16.dp)
+                                        )
+                                    }
+                                }
+
                                 IconButton(onClick = {
                                     viewModel.startNewChat()
                                 }) {
@@ -230,6 +281,53 @@ fun AstraNavGraph(
                     }
                 ) {
                     AuthenticationScreen()
+                }
+
+                composable(
+                    route = AllDestinations.SUBSCRIPTION,
+                    enterTransition = {
+                        when (initialState.destination.route) {
+                            AllDestinations.HOME -> {
+                                slideInVertically (animationSpec = tween(500)) {fullHeight ->
+                                    fullHeight
+                                }
+                            }
+                            else -> null
+                        }
+                    },
+                    exitTransition = {
+                        when (targetState.destination.route) {
+                            AllDestinations.HOME -> {
+                                slideOutVertically (animationSpec = tween(500)){fullHeight ->
+                                    fullHeight
+                                }
+                            }
+                            else -> null
+                        }
+                    },
+                    popEnterTransition = {
+                        when (initialState.destination.route) {
+                            AllDestinations.HOME -> {
+                                slideInVertically (animationSpec = tween(500)){ height ->
+                                    height
+                                }
+                            }
+                            else -> null
+                        }
+                    },
+                    popExitTransition = {
+                        when (targetState.destination.route) {
+                            AllDestinations.HOME -> {
+                                slideOutVertically (animationSpec = tween(500)){fullHeight ->
+                                    fullHeight
+                                }
+                            }
+                            else -> null
+                        }
+                    }
+
+                ) {
+                    PurchaseSubscriptionScreen()
                 }
             }
         }

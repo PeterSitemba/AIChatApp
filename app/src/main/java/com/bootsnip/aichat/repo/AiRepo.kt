@@ -11,13 +11,15 @@ import com.amplifyframework.core.model.query.Where
 import com.amplifyframework.datastore.DataStoreException
 import com.amplifyframework.datastore.DataStoreItemChange
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
-import com.amplifyframework.datastore.generated.model.ChatMessageObject
 import com.amplifyframework.datastore.generated.model.OpenAi
 import com.amplifyframework.kotlin.core.Amplify
 import com.bootsnip.aichat.db.ChatHistory
 import com.bootsnip.aichat.db.ChatHistoryDao
 import com.bootsnip.aichat.db.ChatHistoryUpdate
 import com.bootsnip.aichat.db.ChatHistoryUpdateFav
+import com.bootsnip.aichat.db.Tokens
+import com.bootsnip.aichat.db.TokensDao
+import com.bootsnip.aichat.db.TokensUpdate
 import com.bootsnip.aichat.service.IApiService
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -33,7 +35,8 @@ import javax.inject.Inject
 class AiRepo @Inject constructor(
     private val service: IApiService,
     private val ioDispatcher: CoroutineDispatcher,
-    private val chatHistoryDao: ChatHistoryDao
+    private val chatHistoryDao: ChatHistoryDao,
+    private val tokensDao: TokensDao
 ) : IAiRepo {
 
     override suspend fun gtpChatResponse(
@@ -79,6 +82,19 @@ class AiRepo @Inject constructor(
     override suspend fun deleteChatHistory(id: Int) =
         withContext(ioDispatcher) {
             chatHistoryDao.deleteChatHistory(id)
+        }
+
+    override suspend fun insertTokens(tokens: Tokens) =
+        withContext(ioDispatcher) {
+            tokensDao.insertToken(tokens)
+        }
+
+    override fun getTokens(): Flow<List<Tokens>> =
+        tokensDao.getTokensDistinct()
+
+    override suspend fun updateLocalTokens(tokensUpdate: TokensUpdate) =
+        withContext(ioDispatcher) {
+            tokensDao.updateTokens(tokensUpdate)
         }
 
     //region amplify

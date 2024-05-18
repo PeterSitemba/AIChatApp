@@ -50,6 +50,10 @@ interface AiModule {
         @Singleton
         @Provides
         fun provideChatHistoryDao(db: AstraRoomDatabase) = db.ChatHistoryDao()
+
+        @Singleton
+        @Provides
+        fun provideTokensDao(db: AstraRoomDatabase) = db.TokensDao()
     }
 
 }
