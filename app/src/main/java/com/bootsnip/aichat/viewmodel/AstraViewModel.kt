@@ -106,6 +106,7 @@ class AstraViewModel @Inject constructor(
         getAllChatHistory()
         getLocalToken()
         resolveTokenCount()
+        Log.i("THE DATE IS", DateUtil.currentDate())
     }
 
     fun getGPTResponse(gptQuery: String) {
@@ -117,7 +118,8 @@ class AstraViewModel @Inject constructor(
             //close loading indicator and display no internet connection error
             return
         }
-        if (tokensLocal.value.isNotEmpty() && tokensLocal.value[0].remainingCount <= 0) {
+        //need to change this to avoid a crash. Have default values
+        if (tokensLocal.value.isNotEmpty() && tokensLocal.value[0].remainingCount <= 0 && !tokensLocal.value[0].unlimited) {
             _tokensError.value = true
             _isLoading.value = false
             showPurchaseScreen.value = tokensError.value
@@ -205,21 +207,6 @@ class AstraViewModel @Inject constructor(
                 } else {
                     insertFreshToken()
                 }
-            } else {
-                val tokenLocal = tokensLocal.value[0]
-                if (!tokenLocal.unlimited) {
-                    if (tokenLocal.date != DateUtil.currentDate()) {
-                        val tokensUpdate = TokensUpdate(
-                            tokenLocal.uid,
-                            3,
-                            false,
-                            DateUtil.currentDate()
-                        )
-                        updateLocalToken(tokensUpdate)
-                    }
-                    Log.i("DATE", tokenLocal.date)
-                    Log.i("DATE", DateUtil.currentDate())
-                }
             }
         } else {
             if (tokensLocal.value.isEmpty()) {
@@ -244,13 +231,30 @@ class AstraViewModel @Inject constructor(
         }
     }
 
+    private fun refreshDaysToken() {
+        val tokenLocal = tokensLocal.value[0]
+        if (!tokenLocal.unlimited) {
+            if (tokenLocal.date != DateUtil.currentDate()) {
+                val tokensUpdate = TokensUpdate(
+                    tokenLocal.uid,
+                    3,
+                    false,
+                    DateUtil.currentDate()
+                )
+                updateLocalToken(tokensUpdate)
+            }
+            Log.i("DATE", tokenLocal.date)
+            Log.i("DATE", DateUtil.currentDate())
+        }
+    }
+
     private fun getLocalToken() {
         viewModelScope.launch {
             repo.getTokens().collectLatest {
                 _tokensLocal.value = it
                 if (tokensLocal.value.isNotEmpty()) {
                     _tokensCount.value = tokensLocal.value[0].remainingCount
-
+                    refreshDaysToken()
                 }
             }
         }

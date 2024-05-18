@@ -230,30 +230,35 @@ fun AstraNavGraph(
                     actions = {
                         when (currentRoute) {
                             AllDestinations.HOME -> {
-                                OutlinedButton(
-                                    contentPadding = PaddingValues(
-                                        start = 4.dp,
-                                        top = 0.dp,
-                                        end = 4.dp,
-                                        bottom = 0.dp,
-                                    ),
-                                    modifier = Modifier
-                                        .width(60.dp)
-                                        .height(30.dp),
-                                    onClick = {
-                                        navigationActions.navigateToSubscription()
+                                val isUnlimited =
+                                    tokenLocal.firstOrNull()?.unlimited ?: false
+                                if(!isUnlimited) {
+                                    OutlinedButton(
+                                        contentPadding = PaddingValues(
+                                            start = 4.dp,
+                                            top = 0.dp,
+                                            end = 4.dp,
+                                            bottom = 0.dp,
+                                        ),
+                                        modifier = Modifier
+                                            .width(60.dp)
+                                            .height(30.dp),
+                                        onClick = {
+                                            navigationActions.navigateToSubscription()
+                                        }
+                                    ) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(text = tokenCount.toString())
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Icon(
+                                                painter = painterResource(id = R.drawable.creation),
+                                                contentDescription = "",
+                                                modifier = Modifier
+                                                    .size(16.dp)
+                                            )
+                                        }
                                     }
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(text = tokenCount.toString())
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.creation),
-                                            contentDescription = "",
-                                            modifier = Modifier
-                                                .size(16.dp)
-                                        )
-                                    }
+
                                 }
 
                                 IconButton(onClick = {
