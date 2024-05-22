@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavHostController
+import com.bootsnip.aichat.navigation.AppNavigationActions
 import com.bootsnip.aichat.viewmodel.AstraViewModel
 import kotlinx.coroutines.launch
 
@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun ChatHistoryScreen(
     viewModel: AstraViewModel,
-    navController: NavHostController
+    navigationActions: AppNavigationActions
 ) {
 
     LaunchedEffect(Unit) {
@@ -85,9 +85,9 @@ fun ChatHistoryScreen(
                 }
         ) { page ->
             if (page == 0) {
-                AllChatHistoryScreen(chatHistoryList = chatHistoryList, navController, viewModel)
+                AllChatHistoryScreen(chatHistoryList = chatHistoryList, navigationActions, viewModel)
             } else {
-               FavChatHistoryScreen(chatHistoryList = favChatHistoryList, navController, viewModel)
+               FavChatHistoryScreen(chatHistoryList = favChatHistoryList, navigationActions, viewModel)
             }
         }
     }

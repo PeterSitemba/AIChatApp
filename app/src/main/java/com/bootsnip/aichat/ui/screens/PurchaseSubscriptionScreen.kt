@@ -1,7 +1,6 @@
 package com.bootsnip.aichat.ui.screens
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -72,7 +72,8 @@ fun PurchaseSubscriptionScreen(
                 painter = painterResource(id = R.drawable.professional_hexagon),
                 contentDescription = "pro",
                 modifier = Modifier
-                    .fillMaxWidth().size(60.dp)
+                    .fillMaxWidth()
+                    .size(60.dp)
                     .padding(bottom = 8.dp)
             )
 
@@ -209,7 +210,11 @@ fun PurchaseSubscriptionScreen(
                 .padding(horizontal = 16.dp, vertical = 24.dp),
             shape = RoundedCornerShape(10.dp)
         ) {
-            Text(text = "Continue", fontSize = 20.sp, modifier = Modifier.padding(vertical = 8.dp))
+            Text(
+                text = stringResource(id = R.string.continue_string),
+                fontSize = 16.sp,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
         }
 
     }

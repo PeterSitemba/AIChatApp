@@ -41,7 +41,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,9 +63,11 @@ import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.activities.ChatHistoryActivity
 import com.bootsnip.aichat.ui.components.AppDrawer
 import com.bootsnip.aichat.ui.components.GPTDropDownList
+import com.bootsnip.aichat.ui.components.NewChatDialog
 import com.bootsnip.aichat.ui.screens.AuthenticationScreen
 import com.bootsnip.aichat.ui.screens.HomeScreen
 import com.bootsnip.aichat.ui.screens.PurchaseSubscriptionScreen
+import com.bootsnip.aichat.ui.screens.TextSelectionScreen
 import com.bootsnip.aichat.ui.theme.DarkGrey
 import com.bootsnip.aichat.viewmodel.AstraViewModel
 import kotlinx.coroutines.CoroutineScope
@@ -98,6 +99,11 @@ fun AstraNavGraph(
     var showDropDown by remember {
         mutableStateOf(false)
     }
+
+    var showNewChatDialog by remember {
+        mutableStateOf(false)
+    }
+
     val context = LocalContext.current
     val activityResultLauncher =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) {
@@ -123,11 +129,22 @@ fun AstraNavGraph(
         }
     }
 
+    if (showNewChatDialog) {
+        NewChatDialog(
+            showNewChatDialog = { showNewChatDialog = it },
+            startNewChat = { viewModel.startNewChat() }
+        )
+    }
+
     ModalNavigationDrawer(
         drawerContent = {
             if (currentRoute != AllDestinations.AUTHENTICATION) {
+                val isUnlimited =
+                    tokenLocal.firstOrNull()?.unlimited ?: false
+
                 AppDrawer(
                     route = currentRoute,
+                    unlimited = isUnlimited,
                     navigateToHome = { navigationActions.navigateToHome() },
                     navigateToChatHistory = {
                         activityResultLauncher.launch(
@@ -169,7 +186,7 @@ fun AstraNavGraph(
                                         ),
                                         colors = buttonColors
                                     ) {
-                                        Text(text = selectedGPTLLM?.displayName ?: "GPT-3.5")
+                                        Text(text = selectedGPTLLM?.displayName ?: "GPT - 3.5")
 
                                         Icon(
                                             Icons.Default.KeyboardArrowDown,
@@ -211,7 +228,7 @@ fun AstraNavGraph(
 
                             }
 
-                            AllDestinations.AUTHENTICATION, AllDestinations.SUBSCRIPTION -> {
+                            AllDestinations.AUTHENTICATION, AllDestinations.SUBSCRIPTION, AllDestinations.TEXT_SELECTION -> {
                                 IconButton(onClick = {
                                     navController.popBackStack()
                                 }, content = {
@@ -232,7 +249,7 @@ fun AstraNavGraph(
                             AllDestinations.HOME -> {
                                 val isUnlimited =
                                     tokenLocal.firstOrNull()?.unlimited ?: false
-                                if(!isUnlimited) {
+                                if (!isUnlimited) {
                                     OutlinedButton(
                                         contentPadding = PaddingValues(
                                             start = 4.dp,
@@ -262,7 +279,7 @@ fun AstraNavGraph(
                                 }
 
                                 IconButton(onClick = {
-                                    viewModel.startNewChat()
+                                    showNewChatDialog = true
                                 }) {
                                     Icon(
                                         imageVector = Icons.Filled.AddCircle,
@@ -321,12 +338,20 @@ fun AstraNavGraph(
                                         fadeOut(animationSpec = tween(90))
                             }
 
+                            AllDestinations.TEXT_SELECTION ->
+                                fadeOut(
+                                    animationSpec = tween(300)
+                                )
+
                             else -> null
                         }
                     }
                 ) {
                     HomeScreen(
-                        viewModel
+                        viewModel = viewModel,
+                        onTextSelectClicked = {
+                            navigationActions.navigateToTextSelection()
+                        }
                     )
                 }
 
@@ -396,6 +421,58 @@ fun AstraNavGraph(
                 ) {
                     PurchaseSubscriptionScreen()
                 }
+
+                composable(
+                    route = AllDestinations.TEXT_SELECTION,
+                    enterTransition = {
+                        when (initialState.destination.route) {
+                            AllDestinations.HOME -> {
+                                slideInVertically(animationSpec = tween(500)) { fullHeight ->
+                                    fullHeight
+                                }
+                            }
+
+                            else -> null
+                        }
+                    },
+                    exitTransition = {
+                        when (targetState.destination.route) {
+                            AllDestinations.HOME -> {
+                                slideOutVertically(animationSpec = tween(500)) { fullHeight ->
+                                    fullHeight
+                                }
+                            }
+
+                            else -> null
+                        }
+                    },
+                    popEnterTransition = {
+                        when (initialState.destination.route) {
+                            AllDestinations.HOME -> {
+                                slideInVertically(animationSpec = tween(500)) { height ->
+                                    height
+                                }
+                            }
+
+                            else -> null
+                        }
+                    },
+                    popExitTransition = {
+                        when (targetState.destination.route) {
+                            AllDestinations.HOME -> {
+                                slideOutVertically(animationSpec = tween(500)) { fullHeight ->
+                                    fullHeight
+                                }
+                            }
+
+                            else -> null
+                        }
+                    }
+
+                ) {
+                    TextSelectionScreen(viewModel)
+                }
+
             }
         }
     }

@@ -2,6 +2,9 @@ package com.bootsnip.aichat.navigation
 
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -16,8 +19,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +36,7 @@ import androidx.navigation.compose.rememberNavController
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.screens.ChatHistoryDetailScreen
 import com.bootsnip.aichat.ui.screens.ChatHistoryScreen
+import com.bootsnip.aichat.ui.screens.TextSelectionScreen
 import com.bootsnip.aichat.viewmodel.AstraViewModel
 
 
@@ -46,12 +50,16 @@ fun ChatHistoryNavGraph(
 ) {
 
     val currentNavBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = currentNavBackStackEntry?.destination?.route ?: AllDestinations.HOME
+    val currentRoute = currentNavBackStackEntry?.destination?.route ?: AllDestinations.CHAT_HISTORY
 
     val uid = viewModel.selectedChatHistory.collectAsStateWithLifecycle().value
 
     val chatHistory = viewModel.chatHistory.collectAsStateWithLifecycle().value.find {
         it.uid == uid
+    }
+
+    val navigationActions = remember(navController) {
+        AppNavigationActions(navController)
     }
 
     Scaffold(
@@ -64,7 +72,7 @@ fun ChatHistoryNavGraph(
                         AllDestinations.CHAT_HISTORY_DETAIL -> chatHistory?.chatMessageList?.get(0)?.content
                             ?: "Details"
 
-                        else -> chatHistoryTitle
+                        else -> ""
                     }
                     Text(
                         text = title,
@@ -77,10 +85,11 @@ fun ChatHistoryNavGraph(
                 modifier = Modifier.fillMaxWidth(),
                 navigationIcon = {
                     IconButton(onClick = {
-                        if (currentRoute == AllDestinations.CHAT_HISTORY_DETAIL) {
-                            navController.popBackStack()
-                        } else {
-                            navigateToHome(false, 0)
+                        when(currentRoute) {
+                            AllDestinations.CHAT_HISTORY_DETAIL, AllDestinations.TEXT_SELECTION -> {
+                                navController.popBackStack()
+                            }
+                            AllDestinations.CHAT_HISTORY -> navigateToHome(false, 0)
                         }
                     }, content = {
                         Icon(
@@ -164,7 +173,7 @@ fun ChatHistoryNavGraph(
                 }
             ) {
                 ChatHistoryScreen(
-                    navController = navController,
+                    navigationActions = navigationActions,
                     viewModel = viewModel
                 )
             }
@@ -189,6 +198,10 @@ fun ChatHistoryNavGraph(
                                 AnimatedContentTransitionScope.SlideDirection.Left,
                                 animationSpec = tween(200)
                             )
+                        AllDestinations.TEXT_SELECTION ->
+                            fadeOut(
+                                animationSpec = tween(300)
+                            )
 
                         else -> null
                     }
@@ -212,6 +225,11 @@ fun ChatHistoryNavGraph(
                                 animationSpec = tween(200)
                             )
 
+                        AllDestinations.TEXT_SELECTION ->
+                            fadeOut(
+                                animationSpec = tween(300)
+                            )
+
                         else -> null
                     }
                 }
@@ -220,9 +238,64 @@ fun ChatHistoryNavGraph(
                     viewModel = viewModel,
                     navigateHome = {
                         navigateToHome(true, it)
+                    },
+                    onTextSelectClicked = {
+                        navigationActions.navigateToTextSelection()
                     }
                 )
             }
+
+            composable(
+                route = AllDestinations.TEXT_SELECTION,
+                enterTransition = {
+                    when (initialState.destination.route) {
+                        AllDestinations.CHAT_HISTORY_DETAIL -> {
+                            slideInVertically(animationSpec = tween(500)) { fullHeight ->
+                                fullHeight
+                            }
+                        }
+
+                        else -> null
+                    }
+                },
+                exitTransition = {
+                    when (targetState.destination.route) {
+                        AllDestinations.CHAT_HISTORY_DETAIL -> {
+                            slideOutVertically(animationSpec = tween(500)) { fullHeight ->
+                                fullHeight
+                            }
+                        }
+
+                        else -> null
+                    }
+                },
+                popEnterTransition = {
+                    when (initialState.destination.route) {
+                        AllDestinations.CHAT_HISTORY_DETAIL -> {
+                            slideInVertically(animationSpec = tween(500)) { height ->
+                                height
+                            }
+                        }
+
+                        else -> null
+                    }
+                },
+                popExitTransition = {
+                    when (targetState.destination.route) {
+                        AllDestinations.CHAT_HISTORY_DETAIL -> {
+                            slideOutVertically(animationSpec = tween(500)) { fullHeight ->
+                                fullHeight
+                            }
+                        }
+
+                        else -> null
+                    }
+                }
+
+            ) {
+                TextSelectionScreen(viewModel)
+            }
+
         }
     }
 }

@@ -5,4 +5,11 @@
     <string name="chat_history">Chat History</string>
     <string name="empty_chat_history">Chat history appears here</string>
     <string name="empty_chat_history_fav">Favorite chats appear here</string>
+
+    <string name="no_internet_heading">Oops, you are offline!</string>
+    <string name="no_internet_body">We are having trouble connecting to the internet. Please check your connection and try again</string>
+    <string name="retry">Retry</string>
+    <string name="continue_string">Continue</string>
+    <string name="new_chat">New Chat</string>
+    <string name="new_chat_body">Start a new chat? Don\'t worry, you can find your previous chats in Chat History</string>
 </resources>

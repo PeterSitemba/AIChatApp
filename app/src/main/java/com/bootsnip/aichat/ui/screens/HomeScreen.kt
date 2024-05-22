@@ -1,6 +1,8 @@
 package com.bootsnip.aichat.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,7 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,7 +30,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -36,29 +38,40 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.aallam.openai.api.chat.ChatMessage
-import com.aallam.openai.api.chat.ChatRole
 import com.aallam.openai.api.core.Role
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.components.AiChatBox
 import com.bootsnip.aichat.ui.components.AstraSuggestionsDialog
+import com.bootsnip.aichat.ui.components.AstraTextSelectionActionSheet
 import com.bootsnip.aichat.ui.components.DotsLoadingIndicator
 import com.bootsnip.aichat.ui.components.HomePlaceholder
+import com.bootsnip.aichat.ui.components.NetworkConnectionDialog
 import com.bootsnip.aichat.ui.components.UserChatBox
+import com.bootsnip.aichat.ui.components.UserTextSelectionActionSheet
+import com.bootsnip.aichat.util.NetworkConnection
 import com.bootsnip.aichat.viewmodel.AstraViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
-    viewModel: AstraViewModel
+    viewModel: AstraViewModel,
+    onTextSelectClicked: () -> Unit
 ) {
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
     val gptChatList = viewModel.chatList.collectAsStateWithLifecycle().value
     val isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value
     val tokenError = viewModel.tokensError.collectAsStateWithLifecycle().value
@@ -67,6 +80,29 @@ fun HomeScreen(
     val interactionSource = remember { MutableInteractionSource() }
     var showSuggestionDialog by remember {
         mutableStateOf(false)
+    }
+    var showNoInternetDialog by remember {
+        mutableStateOf(false)
+    }
+
+    var showAstraModalBottomSheet by remember {
+        mutableStateOf(false)
+    }
+
+    var showUserModalBottomSheet by remember {
+        mutableStateOf(false)
+    }
+
+    var selectedResponse by remember {
+        mutableStateOf("")
+    }
+
+    var selectedQuery by remember {
+        mutableStateOf("")
+    }
+
+    var chatItemIndex by remember {
+        mutableIntStateOf(0)
     }
 
     LaunchedEffect(gptChatList.size) {
@@ -79,7 +115,7 @@ fun HomeScreen(
         viewModel.getAllChatHistory()
     }
 
-    if(showSuggestionDialog){
+    if (showSuggestionDialog) {
         AstraSuggestionsDialog(
             showSuggestionDialog = {
                 showSuggestionDialog = it
@@ -89,6 +125,46 @@ fun HomeScreen(
             }
         )
     }
+
+    if (showNoInternetDialog) {
+        NetworkConnectionDialog(
+            showNoInternetDialog = {
+                showNoInternetDialog = it
+            }
+        )
+    }
+
+    if (showAstraModalBottomSheet) {
+        AstraTextSelectionActionSheet(
+            showRegenerate = chatItemIndex == gptChatList.size - 1,
+            onDismissSheet = { showAstraModalBottomSheet = false },
+            onCopyClicked = {
+                clipboardManager.setText(AnnotatedString((selectedResponse)))
+            },
+            onSelectTextClicked = {
+                viewModel.setSelectedResponse(selectedResponse)
+                onTextSelectClicked()
+            },
+            onRegenerateResponseClicked = {
+                viewModel.getGPTResponse(gptChatList[chatItemIndex - 1].content ?: "")
+            }
+        )
+    }
+
+    if (showUserModalBottomSheet) {
+        UserTextSelectionActionSheet(
+            onDismissSheet = { showUserModalBottomSheet = false },
+            onCopyClicked = {
+                clipboardManager.setText(AnnotatedString((selectedQuery)))
+            },
+            onSelectTextClicked = {
+                viewModel.setSelectedQuery(selectedQuery)
+                onTextSelectClicked()
+            }
+        )
+    }
+
+    val haptics = LocalHapticFeedback.current
 
     ConstraintLayout(Modifier.fillMaxSize()) {
         val (chatArea, inputField, placeholder) = createRefs()
@@ -114,15 +190,40 @@ fun HomeScreen(
                         height = Dimension.fillToConstraints
                     }
             ) {
-                items(if(tokenError) errorList else gptChatList) {
+                itemsIndexed(if (tokenError) errorList else gptChatList) {index, item ->
                     Spacer(modifier = Modifier.height(10.dp))
-                    when (it.role) {
+                    when (item.role) {
                         Role("user") -> {
-                            UserChatBox(it.content.orEmpty())
+                            UserChatBox(
+                                item.content.orEmpty(),
+                                modifier = Modifier
+                                    .combinedClickable(
+                                        onClick = { },
+                                        onLongClick = {
+                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            showUserModalBottomSheet = true
+                                            selectedQuery = item.content.orEmpty()
+                                        },
+                                        onLongClickLabel = stringResource(R.string.new_chat)
+                                    )
+                            )
                         }
 
                         Role("assistant") -> {
-                            AiChatBox(it.content.orEmpty())
+                            AiChatBox(
+                                item.content.orEmpty(),
+                                modifier = Modifier
+                                    .combinedClickable(
+                                        onClick = { },
+                                        onLongClick = {
+                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            showAstraModalBottomSheet = true
+                                            selectedResponse = item.content.orEmpty()
+                                            chatItemIndex = index
+                                        },
+                                        onLongClickLabel = stringResource(R.string.new_chat)
+                                    )
+                            )
                         }
 
                         else -> {}
@@ -201,10 +302,14 @@ fun HomeScreen(
 
             ElevatedButton(
                 onClick = {
-                    if(prompt.isNotEmpty()){
-                        viewModel.getGPTResponse(prompt)
+                    if (NetworkConnection(context).isNetworkAvailable()) {
+                        if (prompt.isNotEmpty()) {
+                            viewModel.getGPTResponse(prompt)
+                        }
+                        prompt = ""
+                    } else {
+                        showNoInternetDialog = true
                     }
-                    prompt = ""
                 },
                 shape = CircleShape,
                 modifier = Modifier

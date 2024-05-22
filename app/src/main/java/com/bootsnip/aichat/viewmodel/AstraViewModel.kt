@@ -23,17 +23,14 @@ import com.bootsnip.aichat.util.AssistantType
 import com.bootsnip.aichat.util.DateUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.sql.Timestamp
-import java.time.Instant
-import java.time.format.DateTimeFormatter
-import java.util.Date
 import javax.inject.Inject
 
 @HiltViewModel
@@ -68,9 +65,8 @@ class AstraViewModel @Inject constructor(
 
     private val openAiAuth: MutableStateFlow<String> = MutableStateFlow("")
 
-    private val _gptLLMs: MutableStateFlow<MutableSet<ChatGPTLLMs>> =
-        MutableStateFlow(mutableSetOf())
-
+    private val _gptLLMs: MutableStateFlow<MutableList<ChatGPTLLMs>> =
+        MutableStateFlow(mutableListOf())
     val gptLLMs = _gptLLMs.asStateFlow()
 
     private val currentUserId: MutableStateFlow<String?> = MutableStateFlow(null)
@@ -98,34 +94,35 @@ class AstraViewModel @Inject constructor(
 
     private var isUpdate: Boolean = false
 
+    private val _selectedResponse: MutableStateFlow<String> = MutableStateFlow("")
+    val selectedResponse = _selectedResponse.asStateFlow()
+
+    private val _selectedQuery: MutableStateFlow<String> = MutableStateFlow("")
+    val selectedQuery = _selectedQuery.asStateFlow()
+
+    private val _isQuerySelected: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val isQuerySelected = _isQuerySelected.asStateFlow()
+
+    private val _isResponseSelected: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val isResponseSelected = _isResponseSelected.asStateFlow()
+
     init {
-        queryOpenAi()
-        queryGPTLLMs()
+        observeOpenAI()
+        prepareOpenAI()
         fetchSignInState()
-        if (openAiAuth.value.isEmpty()) observeOpenAi()
         getAllChatHistory()
         getLocalToken()
         resolveTokenCount()
-        Log.i("THE DATE IS", DateUtil.currentDate())
     }
 
     fun getGPTResponse(gptQuery: String) {
         showPurchaseScreen.value = tokensError.value
         _isLoading.value = true
-        if (openAiAuth.value.isEmpty() || gptLLMs.value.isEmpty()) {
-            queryOpenAi()
-            queryGPTLLMs()
-            //close loading indicator and display no internet connection error
-            return
-        }
+        //check internet connection here.
+        isLLMAvailable(gptQuery)
         //need to change this to avoid a crash. Have default values
-        if (tokensLocal.value.isNotEmpty() && tokensLocal.value[0].remainingCount <= 0 && !tokensLocal.value[0].unlimited) {
-            _tokensError.value = true
-            _isLoading.value = false
-            showPurchaseScreen.value = tokensError.value
-            getChatListWithError(gptQuery)
-            return
-        }
+        if(tokensDepleted(gptQuery)) return
+
         viewModelScope.launch {
             try {
                 isUpdate = chatList.value.isNotEmpty()
@@ -165,6 +162,78 @@ class AstraViewModel @Inject constructor(
                 _isLoading.value = false
             }
         }
+    }
+
+    private fun prepareOpenAI(retryGPTQuery: Boolean = false, gptQuery: String = "") {
+        viewModelScope.launch {
+            val set = gptLLMs.value.toMutableSet()
+            val openAi = async { repo.queryDataStore() }.await()
+            val gptVersion = async { repo.queryGPTLLMs() }.await()
+
+            openAi
+                .catch { Log.e("OpenAI KEY", "Error querying key", it) }
+                .collect {
+                    Log.i("OpenAI KEY", "key ${it.openAi}")
+                    openAiAuth.value = it.openAi
+                    if(retryGPTQuery && openAiAuth.value.isNotEmpty()) {
+                        getGPTResponse(gptQuery)
+                    }
+                }
+
+            gptVersion
+                .catch { Log.e("GPT LLM List", "Error querying GPT LLM List", it) }
+                .collect {
+                    Log.i("GPT LLM List", "llm ${it.llmVersion}")
+                    set.add(it)
+                }
+            _gptLLMs.value = set.toMutableList()
+            _selectedGPTLLM.value = gptLLMs.value.firstOrNull()
+        }
+    }
+
+    private fun observeOpenAI() {
+        viewModelScope.launch {
+            val set = gptLLMs.value.toMutableSet()
+            val openAi = async { repo.observeDataStore() }.await()
+            val gptVersion = async { repo.observeGPTLLMs() }.await()
+
+            openAi
+                .catch { Log.e("OpenAI KEY", "Error querying key", it) }
+                .collect {
+                    Log.i("OpenAI KEY", "key ${it.item().openAi}")
+                    openAiAuth.value = it.item().openAi
+                }
+
+            gptVersion
+                .catch { Log.e("GPT LLM List", "Error observing GPT LLM List", it) }
+                .collect {
+                    Log.i("GPT LLM List", "key ${it.item().llmVersion}")
+                    set.add(it.item())
+                }
+
+            _gptLLMs.value = set.toMutableList()
+            _selectedGPTLLM.value = gptLLMs.value.firstOrNull()
+        }
+    }
+
+    private fun isLLMAvailable(query: String){
+        val isLLMAvailable = openAiAuth.value.isNotEmpty()
+        if(!isLLMAvailable){
+            prepareOpenAI(retryGPTQuery = true, gptQuery = query)
+        }
+    }
+
+    private fun tokensDepleted(query: String): Boolean {
+        val remainingTokenCount = tokensLocal.value.firstOrNull()?.remainingCount ?: 0
+        val tokenUnlimited = tokensLocal.value.firstOrNull()?.unlimited ?: false
+        val tokensDepletedStatus = remainingTokenCount <= 0 && !tokenUnlimited
+        if(tokensDepletedStatus) {
+            _tokensError.value = true
+            _isLoading.value = false
+            showPurchaseScreen.value = tokensError.value
+            getChatListWithError(query)
+        }
+        return tokensDepletedStatus
     }
 
     private fun insertOrUpdateChatHistoryDb() {
@@ -264,7 +333,7 @@ class AstraViewModel @Inject constructor(
         val tokenLocal = tokensLocal.value[0]
         if (!tokenLocal.unlimited) {
             val tokensUpdate = TokensUpdate(
-                tokenLocal.uid!!,
+                tokenLocal.uid,
                 tokenLocal.remainingCount - 1,
                 false,
                 DateUtil.currentDate()
@@ -347,60 +416,6 @@ class AstraViewModel @Inject constructor(
         }?.toMutableList() ?: mutableListOf()
 
         currentRowId.value = uid.toLong()
-    }
-
-    private fun queryOpenAi() {
-        viewModelScope.launch {
-            val response = repo.queryDataStore()
-            response
-                .catch { Log.e("OpenAI KEY", "Error querying key", it) }
-                .collect {
-                    Log.i("OpenAI KEY", "key ${it.openAi}")
-                    openAiAuth.value = it.openAi
-                }
-        }
-    }
-
-    private fun observeOpenAi() {
-        viewModelScope.launch {
-            val response = repo.observeDataStore()
-            response
-                .catch { Log.e("OpenAI KEY", "Error querying key", it) }
-                .collect {
-                    Log.i("OpenAI KEY", "key ${it.item().openAi}")
-                    openAiAuth.value = it.item().openAi
-                }
-        }
-    }
-
-    private fun queryGPTLLMs() {
-        viewModelScope.launch {
-            val set = mutableSetOf<ChatGPTLLMs>()
-            val response = repo.queryGPTLLMs()
-            response
-                .catch { Log.e("GPT LLM List", "Error querying GPT LLM List", it) }
-                .collect {
-                    Log.i("GPT LLM List", "llm ${it.llmVersion}")
-                    set.add(it)
-                }
-            _gptLLMs.value = set
-            _selectedGPTLLM.value = gptLLMs.value.firstOrNull()
-        }
-    }
-
-    private fun observeGPTLLMs() {
-        viewModelScope.launch {
-            val set = mutableSetOf<ChatGPTLLMs>()
-            val response = repo.observeGPTLLMs()
-            response
-                .catch { Log.e("GPT LLM List", "Error observing GPT LLM List", it) }
-                .collect {
-                    Log.i("GPT LLM List", "key ${it.item().llmVersion}")
-                    set.add(it.item())
-                }
-            _gptLLMs.value = set
-            _selectedGPTLLM.value = gptLLMs.value.firstOrNull()
-        }
     }
 
     private fun fetchSignInState() {
@@ -602,19 +617,15 @@ class AstraViewModel @Inject constructor(
         _selectedGPTLLM.value = selectLLM
     }
 
-    /*
+    fun setSelectedResponse(selectedResponse: String) {
+        _selectedResponse.value = selectedResponse
+        _isResponseSelected.value = true
+        _isQuerySelected.value = false
+    }
 
-
-
-
-        private fun updateChatHistoryUserId(userId: String?) {
-            viewModelScope.launch {
-                userId?.let {
-                    for(chatHistory in chatHistoryRemote.value){
-                        if(chatHistory.userId.isNotEmpty()) continue
-                        repo.updateChatHistoryUserId(it, chatHistory.id)
-                    }
-                }
-            }
-        }*/
+    fun setSelectedQuery(selectedQuery: String) {
+        _selectedQuery.value = selectedQuery
+        _isQuerySelected.value = true
+        _isResponseSelected.value = false
+    }
 }

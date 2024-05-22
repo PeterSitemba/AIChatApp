@@ -26,6 +26,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -35,6 +36,7 @@ import com.bootsnip.aichat.R
 @Composable
 fun AppDrawer(
     route: String,
+    unlimited: Boolean,
     modifier: Modifier = Modifier,
     navigateToHome: () -> Unit = {},
     navigateToChatHistory: () -> Unit = {},
@@ -82,16 +84,18 @@ fun AppDrawer(
             shape = MaterialTheme.shapes.small
         )
 
-        NavigationDrawerItem(
-            label = { Text(text = "Unlock Pro Features", style = MaterialTheme.typography.labelSmall) },
-            selected = route == AllDestinations.SUBSCRIPTION,
-            onClick = {
-                navigateToSubscription()
-                closeDrawer()
-            },
-            icon = { Icon(painterResource(id = R.drawable.professional_hexagon), contentDescription = null) },
-            shape = MaterialTheme.shapes.small
-        )
+        if(!unlimited) {
+            NavigationDrawerItem(
+                label = { Text(text = "Unlock Pro Features", style = MaterialTheme.typography.labelSmall) },
+                selected = route == AllDestinations.SUBSCRIPTION,
+                onClick = {
+                    navigateToSubscription()
+                    closeDrawer()
+                },
+                icon = { Icon(painterResource(id = R.drawable.professional_hexagon), contentDescription = null) },
+                shape = MaterialTheme.shapes.small
+            )
+        }
     }
 }
 
@@ -108,20 +112,22 @@ fun DrawerHeader(modifier: Modifier) {
     ) {
 
         Image(
-            painterResource(id = R.drawable.user_avatar),
+            painterResource(id = R.drawable.logo),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = modifier
                 .size(dimensionResource(id = R.dimen.header_image_size))
                 .clip(CircleShape)
+                .align(Alignment.CenterHorizontally)
         )
         Spacer(modifier = Modifier.padding(dimensionResource(id = R.dimen.spacer_padding)))
-
         Text(
             text = stringResource(id = R.string.app_name),
             textAlign = TextAlign.Center,
+            fontWeight = FontWeight.SemiBold,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier.align(Alignment.CenterHorizontally)
         )
     }
 }
@@ -129,5 +135,5 @@ fun DrawerHeader(modifier: Modifier) {
 @Preview
 @Composable
 fun DrawerHeaderPreview() {
-    AppDrawer(modifier = Modifier, route = AllDestinations.HOME)
+    AppDrawer(modifier = Modifier, route = AllDestinations.HOME, unlimited = true)
 }

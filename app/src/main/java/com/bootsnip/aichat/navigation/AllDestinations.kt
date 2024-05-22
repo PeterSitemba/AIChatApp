@@ -6,6 +6,7 @@ import com.bootsnip.aichat.navigation.AllDestinations.AUTHENTICATION
 import com.bootsnip.aichat.navigation.AllDestinations.CHAT_HISTORY_DETAIL
 import com.bootsnip.aichat.navigation.AllDestinations.HOME
 import com.bootsnip.aichat.navigation.AllDestinations.SUBSCRIPTION
+import com.bootsnip.aichat.navigation.AllDestinations.TEXT_SELECTION
 
 object AllDestinations {
     const val HOME = "Home"
@@ -13,6 +14,7 @@ object AllDestinations {
     const val CHAT_HISTORY_DETAIL = "ChatHistoryDetail"
     const val AUTHENTICATION = "Authentication"
     const val SUBSCRIPTION = "subscription"
+    const val TEXT_SELECTION = "text_selection"
 }
 
 class AppNavigationActions(private val navController: NavHostController) {
@@ -52,6 +54,13 @@ class AppNavigationActions(private val navController: NavHostController) {
             popUpTo(navController.graph.findStartDestination().id) {
                 saveState = true
             }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
+    fun navigateToTextSelection() {
+        navController.navigate(TEXT_SELECTION) {
             launchSingleTop = true
             restoreState = true
         }
