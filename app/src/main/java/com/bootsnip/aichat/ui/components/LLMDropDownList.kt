@@ -32,7 +32,7 @@ fun GPTDropDownList(
         onDismissRequest = { showDropDown(false) },
         offset = DpOffset((-12).dp, 0.dp)
     ) {
-        llmList.forEach {
+        llmList.sortedBy { it.llmVersion }.forEach {
             DropdownMenuItem(
                 text = {
                     Row(

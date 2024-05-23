@@ -5,9 +5,11 @@ import com.aallam.openai.api.chat.ChatMessage
 import com.amplifyframework.auth.AuthSession
 import com.amplifyframework.auth.AuthUser
 import com.amplifyframework.datastore.DataStoreItemChange
+import com.amplifyframework.datastore.DataStoreQuerySnapshot
 import com.amplifyframework.datastore.generated.model.ChatGPTLLMs
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.OpenAi
+import com.amplifyframework.hub.HubEvent
 import com.bootsnip.aichat.db.ChatHistory
 import com.bootsnip.aichat.db.ChatHistoryUpdate
 import com.bootsnip.aichat.db.ChatHistoryUpdateFav
@@ -42,11 +44,11 @@ interface IAiRepo {
     //region amplify
     suspend fun fetchAuthSession(): AuthSession
 
-    suspend fun observeDataStore(): Flow<DataStoreItemChange<OpenAi>>
+    suspend fun observeDataStore(): Flow<DataStoreQuerySnapshot<OpenAi>>
 
     suspend fun queryDataStore(): Flow<OpenAi>
 
-    suspend fun observeGPTLLMs(): Flow<DataStoreItemChange<ChatGPTLLMs>>
+    suspend fun observeGPTLLMs(): Flow<DataStoreQuerySnapshot<ChatGPTLLMs>>
 
     suspend fun queryGPTLLMs(): Flow<ChatGPTLLMs>
 
@@ -65,4 +67,6 @@ interface IAiRepo {
     suspend fun observeFavChatHistory(): Flow<DataStoreItemChange<ChatHistoryRemote>>
 
     suspend fun queryFavChatHistory(): Flow<ChatHistoryRemote>
+
+    suspend fun dataStoreEventHub(): Flow<HubEvent<*>>
 }

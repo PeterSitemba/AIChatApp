@@ -177,7 +177,9 @@ fun AstraNavGraph(
                             AllDestinations.HOME -> {
                                 Column {
                                     Button(
-                                        onClick = { showDropDown = true },
+                                        onClick = {
+                                            showDropDown = true
+                                        },
                                         contentPadding = PaddingValues(
                                             bottom = 8.dp,
                                             top = 8.dp,
@@ -196,7 +198,7 @@ fun AstraNavGraph(
                                     }
 
                                     GPTDropDownList(
-                                        llmList = gptList.toList(),
+                                        llmList = gptList,
                                         expanded = showDropDown,
                                         unlimited = tokenLocal.firstOrNull()?.unlimited ?: false,
                                         showDropDown = { showDropDown = it },

@@ -12,4 +12,5 @@
     <string name="continue_string">Continue</string>
     <string name="new_chat">New Chat</string>
     <string name="new_chat_body">Start a new chat? Don\'t worry, you can find your previous chats in Chat History</string>
+    <string name="error_noConnection">No internet connection.</string>
 </resources>

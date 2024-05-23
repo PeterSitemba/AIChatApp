@@ -76,6 +76,7 @@ fun HomeScreen(
     val isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value
     val tokenError = viewModel.tokensError.collectAsStateWithLifecycle().value
     val errorList = viewModel.errorChatList.collectAsStateWithLifecycle().value
+
     val listState = rememberLazyListState()
     val interactionSource = remember { MutableInteractionSource() }
     var showSuggestionDialog by remember {
@@ -105,7 +106,12 @@ fun HomeScreen(
         mutableIntStateOf(0)
     }
 
-    LaunchedEffect(gptChatList.size) {
+    LaunchedEffect(gptChatList.size, errorList.size) {
+        if (errorList.size > 0) {
+            listState.animateScrollToItem(errorList.size - 1)
+            return@LaunchedEffect
+        }
+
         if (gptChatList.size > 0) {
             listState.animateScrollToItem(gptChatList.size - 1)
         }
@@ -190,7 +196,7 @@ fun HomeScreen(
                         height = Dimension.fillToConstraints
                     }
             ) {
-                itemsIndexed(if (tokenError) errorList else gptChatList) {index, item ->
+                itemsIndexed(if (tokenError) errorList else gptChatList) { index, item ->
                     Spacer(modifier = Modifier.height(10.dp))
                     when (item.role) {
                         Role("user") -> {

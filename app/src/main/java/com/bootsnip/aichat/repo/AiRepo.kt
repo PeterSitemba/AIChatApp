@@ -7,12 +7,17 @@ import com.aallam.openai.api.chat.ChatRole
 import com.aallam.openai.client.OpenAI
 import com.amplifyframework.auth.AuthSession
 import com.amplifyframework.auth.AuthUser
+import com.amplifyframework.core.model.query.ObserveQueryOptions
 import com.amplifyframework.core.model.query.Where
+import com.amplifyframework.datastore.DataStoreChannelEventName
 import com.amplifyframework.datastore.DataStoreException
 import com.amplifyframework.datastore.DataStoreItemChange
+import com.amplifyframework.datastore.DataStoreQuerySnapshot
 import com.amplifyframework.datastore.generated.model.ChatGPTLLMs
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.OpenAi
+import com.amplifyframework.hub.HubChannel
+import com.amplifyframework.hub.HubEvent
 import com.amplifyframework.kotlin.core.Amplify
 import com.bootsnip.aichat.db.ChatHistory
 import com.bootsnip.aichat.db.ChatHistoryDao
@@ -55,7 +60,12 @@ class AiRepo @Inject constructor(
                 )
             )
             completeQuery.addAll(query)
-            OpenAI(openAiAuth).chatCompletion(service.getGPTResponse(completeQuery.toList(), modelId))
+            OpenAI(openAiAuth).chatCompletion(
+                service.getGPTResponse(
+                    completeQuery.toList(),
+                    modelId
+                )
+            )
         }
 
     //region room db functions
@@ -64,6 +74,7 @@ class AiRepo @Inject constructor(
 
     override fun getAllFavChatHistory() =
         chatHistoryDao.getAllFavChatHistoryDistinct()
+
     override suspend fun updateChatHistory(
         chatHistoryUpdate: ChatHistoryUpdate
     ) =
@@ -105,9 +116,12 @@ class AiRepo @Inject constructor(
             Amplify.Auth.fetchAuthSession()
         }
 
-    override suspend fun observeDataStore(): Flow<DataStoreItemChange<OpenAi>> =
+    override suspend fun observeDataStore(): Flow<DataStoreQuerySnapshot<OpenAi>> =
         withContext(ioDispatcher) {
-            Amplify.DataStore.observe(OpenAi::class)
+            Amplify.DataStore.observeQuery(
+                OpenAi::class,
+                ObserveQueryOptions()
+            )
         }
 
     override suspend fun queryDataStore(): Flow<OpenAi> =
@@ -115,9 +129,12 @@ class AiRepo @Inject constructor(
             Amplify.DataStore.query(OpenAi::class)
         }
 
-    override suspend fun observeGPTLLMs(): Flow<DataStoreItemChange<ChatGPTLLMs>> =
+    override suspend fun observeGPTLLMs(): Flow<DataStoreQuerySnapshot<ChatGPTLLMs>> =
         withContext(ioDispatcher) {
-            Amplify.DataStore.observe(ChatGPTLLMs::class)
+            Amplify.DataStore.observeQuery(
+                ChatGPTLLMs::class,
+                ObserveQueryOptions()
+            )
         }
 
     override suspend fun queryGPTLLMs(): Flow<ChatGPTLLMs> =
@@ -132,12 +149,18 @@ class AiRepo @Inject constructor(
 
     override suspend fun observeChatHistory(userId: String): Flow<DataStoreItemChange<ChatHistoryRemote>> =
         withContext(ioDispatcher) {
-            Amplify.DataStore.observe(ChatHistoryRemote::class, ChatHistoryRemote.USER_ID.eq(userId))
+            Amplify.DataStore.observe(
+                ChatHistoryRemote::class,
+                ChatHistoryRemote.USER_ID.eq(userId)
+            )
         }
 
     override suspend fun queryChatHistory(userId: String): Flow<ChatHistoryRemote> =
         withContext(ioDispatcher) {
-            Amplify.DataStore.query(ChatHistoryRemote::class, Where.matches(ChatHistoryRemote.USER_ID.eq(userId)))
+            Amplify.DataStore.query(
+                ChatHistoryRemote::class,
+                Where.matches(ChatHistoryRemote.USER_ID.eq(userId))
+            )
         }
 
     override suspend fun saveChatHistory(chatHistoryRemote: ChatHistoryRemote) {
@@ -152,17 +175,28 @@ class AiRepo @Inject constructor(
     }
 
     override suspend fun observeFavChatHistory(): Flow<DataStoreItemChange<ChatHistoryRemote>> =
-        withContext(ioDispatcher){
+        withContext(ioDispatcher) {
             Amplify.DataStore.observe(ChatHistoryRemote::class, ChatHistoryRemote.FAV.gt(1))
         }
 
     override suspend fun queryFavChatHistory(): Flow<ChatHistoryRemote> =
         withContext(ioDispatcher) {
-            Amplify.DataStore.query(ChatHistoryRemote::class, Where.matches(ChatHistoryRemote.FAV.gt(1)))
+            Amplify.DataStore.query(
+                ChatHistoryRemote::class,
+                Where.matches(ChatHistoryRemote.FAV.gt(1))
+            )
         }
 
+    override suspend fun dataStoreEventHub(): Flow<HubEvent<*>> =
+        Amplify.Hub.subscribe(HubChannel.DATASTORE)
+        { it.name == DataStoreChannelEventName.MODEL_SYNCED.toString() }
+
+
     override suspend fun updateChatHistoryRemote(chatHistoryRemote: ChatHistoryRemote) {
-        Amplify.DataStore.query(ChatHistoryRemote::class, Where.matches(ChatHistoryRemote.LOCAL_DB_ID.eq(chatHistoryRemote.localDbId)))
+        Amplify.DataStore.query(
+            ChatHistoryRemote::class,
+            Where.matches(ChatHistoryRemote.LOCAL_DB_ID.eq(chatHistoryRemote.localDbId))
+        )
             .catch { Log.e("Chat History", "Query failed", it) }
             .map {
                 it.copyOfBuilder()
@@ -179,7 +213,10 @@ class AiRepo @Inject constructor(
     }
 
     override suspend fun updateChatHistoryUserId(userId: String, id: String) {
-        Amplify.DataStore.query(ChatHistoryRemote::class, Where.identifier(ChatHistoryRemote::class.java, id))
+        Amplify.DataStore.query(
+            ChatHistoryRemote::class,
+            Where.identifier(ChatHistoryRemote::class.java, id)
+        )
             .catch { Log.e("Chat History", "Query failed", it) }
             .map {
                 it.copyOfBuilder()

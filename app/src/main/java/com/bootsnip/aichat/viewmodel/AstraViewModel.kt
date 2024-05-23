@@ -9,6 +9,7 @@ import com.aallam.openai.api.chat.ChatRole
 import com.amplifyframework.auth.cognito.AWSCognitoAuthSession
 import com.amplifyframework.auth.result.AuthSessionResult
 import com.amplifyframework.core.model.temporal.Temporal
+import com.amplifyframework.datastore.events.ModelSyncedEvent
 import com.amplifyframework.datastore.generated.model.ChatGPTLLMs
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.ChatMessageObject
@@ -23,7 +24,7 @@ import com.bootsnip.aichat.util.AssistantType
 import com.bootsnip.aichat.util.DateUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -64,6 +65,8 @@ class AstraViewModel @Inject constructor(
     val selectedChatHistory: MutableStateFlow<Int?> = MutableStateFlow(null)
 
     private val openAiAuth: MutableStateFlow<String> = MutableStateFlow("")
+
+    private val openAiSynced: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     private val _gptLLMs: MutableStateFlow<MutableList<ChatGPTLLMs>> =
         MutableStateFlow(mutableListOf())
@@ -106,9 +109,13 @@ class AstraViewModel @Inject constructor(
     private val _isResponseSelected: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isResponseSelected = _isResponseSelected.asStateFlow()
 
+
     init {
+        getDatastoreModelEvent()
         observeOpenAI()
         prepareOpenAI()
+        observeGPTList()
+        prepareGPTList()
         fetchSignInState()
         getAllChatHistory()
         getLocalToken()
@@ -118,10 +125,8 @@ class AstraViewModel @Inject constructor(
     fun getGPTResponse(gptQuery: String) {
         showPurchaseScreen.value = tokensError.value
         _isLoading.value = true
-        //check internet connection here.
-        isLLMAvailable(gptQuery)
-        //need to change this to avoid a crash. Have default values
-        if(tokensDepleted(gptQuery)) return
+
+        if (tokensDepleted(gptQuery)) return
 
         viewModelScope.launch {
             try {
@@ -135,6 +140,21 @@ class AstraViewModel @Inject constructor(
                     )
                 }
 
+                checkOpenAiSyncAndGetResponse(newQueryList)
+
+            } catch (e: Exception) {
+                //Handle error scenario
+                _isLoading.value = false
+            }
+        }
+    }
+
+    private fun checkOpenAiSyncAndGetResponse(newQueryList: MutableList<ChatMessage>) {
+        viewModelScope.launch {
+            if (openAiAuth.value.isEmpty()) {
+                delay(1000)
+                checkOpenAiSyncAndGetResponse(newQueryList)
+            } else {
                 val response = repo.gtpChatResponse(
                     newQueryList.toList(),
                     openAiAuth.value,
@@ -157,69 +177,74 @@ class AstraViewModel @Inject constructor(
                 Log.d("GPT RESPONSE ID", response.id)
                 _isLoading.value = false
 
-            } catch (e: Exception) {
-                //Handle error scenario
-                _isLoading.value = false
             }
         }
     }
 
-    private fun prepareOpenAI(retryGPTQuery: Boolean = false, gptQuery: String = "") {
+    private fun prepareOpenAI() {
         viewModelScope.launch {
-            val set = gptLLMs.value.toMutableSet()
-            val openAi = async { repo.queryDataStore() }.await()
-            val gptVersion = async { repo.queryGPTLLMs() }.await()
+            val openAi = repo.queryDataStore()
 
             openAi
                 .catch { Log.e("OpenAI KEY", "Error querying key", it) }
                 .collect {
                     Log.i("OpenAI KEY", "key ${it.openAi}")
                     openAiAuth.value = it.openAi
-                    if(retryGPTQuery && openAiAuth.value.isNotEmpty()) {
-                        getGPTResponse(gptQuery)
-                    }
                 }
+        }
+    }
+
+    private fun prepareGPTList() {
+        viewModelScope.launch {
+            val list = mutableListOf<ChatGPTLLMs>()
+            val gptVersion = repo.queryGPTLLMs()
 
             gptVersion
                 .catch { Log.e("GPT LLM List", "Error querying GPT LLM List", it) }
                 .collect {
                     Log.i("GPT LLM List", "llm ${it.llmVersion}")
-                    set.add(it)
+                    list.add(it)
                 }
-            _gptLLMs.value = set.toMutableList()
+
+            _gptLLMs.value.clear()
+            _gptLLMs.value = list
             _selectedGPTLLM.value = gptLLMs.value.firstOrNull()
         }
     }
 
     private fun observeOpenAI() {
         viewModelScope.launch {
-            val set = gptLLMs.value.toMutableSet()
-            val openAi = async { repo.observeDataStore() }.await()
-            val gptVersion = async { repo.observeGPTLLMs() }.await()
-
+            val openAi = repo.observeDataStore()
             openAi
                 .catch { Log.e("OpenAI KEY", "Error querying key", it) }
                 .collect {
-                    Log.i("OpenAI KEY", "key ${it.item().openAi}")
-                    openAiAuth.value = it.item().openAi
+                    try {
+                        Log.i("OpenAI KEY", "key ${it.items}")
+                        openAiAuth.value = it.items.first().openAi
+                    } catch (e: Exception) {
+                        Log.e("OpenAI KEY", e.message.toString())
+                    }
                 }
+        }
+    }
+
+    private fun observeGPTList() {
+        viewModelScope.launch {
+            val list = mutableListOf<ChatGPTLLMs>()
+            val gptVersion = repo.observeGPTLLMs()
 
             gptVersion
                 .catch { Log.e("GPT LLM List", "Error observing GPT LLM List", it) }
                 .collect {
-                    Log.i("GPT LLM List", "key ${it.item().llmVersion}")
-                    set.add(it.item())
+                    try {
+                        Log.i("GPT LLM List", "key ${it.items}")
+                        list.addAll(it.items)
+                        _gptLLMs.value.clear()
+                        _gptLLMs.value = list
+                    } catch (e: Exception) {
+                        Log.e("GPT LLM List", e.message.toString())
+                    }
                 }
-
-            _gptLLMs.value = set.toMutableList()
-            _selectedGPTLLM.value = gptLLMs.value.firstOrNull()
-        }
-    }
-
-    private fun isLLMAvailable(query: String){
-        val isLLMAvailable = openAiAuth.value.isNotEmpty()
-        if(!isLLMAvailable){
-            prepareOpenAI(retryGPTQuery = true, gptQuery = query)
         }
     }
 
@@ -227,7 +252,7 @@ class AstraViewModel @Inject constructor(
         val remainingTokenCount = tokensLocal.value.firstOrNull()?.remainingCount ?: 0
         val tokenUnlimited = tokensLocal.value.firstOrNull()?.unlimited ?: false
         val tokensDepletedStatus = remainingTokenCount <= 0 && !tokenUnlimited
-        if(tokensDepletedStatus) {
+        if (tokensDepletedStatus) {
             _tokensError.value = true
             _isLoading.value = false
             showPurchaseScreen.value = tokensError.value
@@ -627,5 +652,24 @@ class AstraViewModel @Inject constructor(
         _selectedQuery.value = selectedQuery
         _isQuerySelected.value = true
         _isResponseSelected.value = false
+    }
+
+    private fun getDatastoreModelEvent() {
+        viewModelScope.launch {
+            val response = repo.dataStoreEventHub()
+            response
+                .collect {
+                    val event = it.data as ModelSyncedEvent
+                    if (event.model == "ChatGPTLLMs") {
+                        if (event.isFullSync) {
+                            _selectedGPTLLM.value = gptLLMs.value.firstOrNull()
+                        }
+                    }
+                    if (event.model == "OpenAi") {
+                        openAiSynced.value = event.isFullSync
+                    }
+                    Log.i("MODEL SYNCED", "Name of model synced is: ${event.model}")
+                }
+        }
     }
 }
