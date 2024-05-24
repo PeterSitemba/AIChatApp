@@ -61,6 +61,7 @@ import com.bootsnip.aichat.ui.components.HomePlaceholder
 import com.bootsnip.aichat.ui.components.NetworkConnectionDialog
 import com.bootsnip.aichat.ui.components.UserChatBox
 import com.bootsnip.aichat.ui.components.UserTextSelectionActionSheet
+import com.bootsnip.aichat.util.FormatChatShare
 import com.bootsnip.aichat.util.NetworkConnection
 import com.bootsnip.aichat.viewmodel.AstraViewModel
 
@@ -143,6 +144,7 @@ fun HomeScreen(
     if (showAstraModalBottomSheet) {
         AstraTextSelectionActionSheet(
             showRegenerate = chatItemIndex == gptChatList.size - 1,
+            showShareEntireChat = chatItemIndex == gptChatList.size - 1,
             onDismissSheet = { showAstraModalBottomSheet = false },
             onCopyClicked = {
                 clipboardManager.setText(AnnotatedString((selectedResponse)))
@@ -153,6 +155,9 @@ fun HomeScreen(
             },
             onRegenerateResponseClicked = {
                 viewModel.getGPTResponse(gptChatList[chatItemIndex - 1].content ?: "")
+            },
+            onShareEntireChatClicked = {
+                clipboardManager.setText(AnnotatedString((FormatChatShare(gptChatList).chatToShare())))
             }
         )
     }

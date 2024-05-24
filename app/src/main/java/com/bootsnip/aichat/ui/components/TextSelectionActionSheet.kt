@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -19,10 +20,12 @@ import com.bootsnip.aichat.R
 @OptIn(ExperimentalMaterial3Api::class)
 fun AstraTextSelectionActionSheet(
     showRegenerate: Boolean = false,
+    showShareEntireChat: Boolean = false,
     onDismissSheet: () -> Unit,
     onCopyClicked: () -> Unit,
     onSelectTextClicked: () -> Unit,
-    onRegenerateResponseClicked: () -> Unit = {}
+    onRegenerateResponseClicked: () -> Unit = {},
+    onShareEntireChatClicked: () -> Unit = {}
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismissSheet
@@ -44,8 +47,20 @@ fun AstraTextSelectionActionSheet(
                     onSelectTextClicked()
                     onDismissSheet()
                 }
-                .padding(bottom = if (showRegenerate) 0.dp else 24.dp)
+                .padding(bottom = if (showRegenerate) 0.dp else 32.dp)
         )
+
+        if (showShareEntireChat) {
+            ListItem(
+                headlineContent = { Text("Share entire chat") },
+                leadingContent = { Icon(Icons.Default.Share, null) },
+                modifier = Modifier
+                    .clickable {
+                        onShareEntireChatClicked()
+                        onDismissSheet()
+                    }
+            )
+        }
 
         if (showRegenerate) {
             ListItem(
@@ -56,7 +71,7 @@ fun AstraTextSelectionActionSheet(
                         onRegenerateResponseClicked()
                         onDismissSheet()
                     }
-                    .padding(bottom = 24.dp)
+                    .padding(bottom = 32.dp)
             )
         }
 

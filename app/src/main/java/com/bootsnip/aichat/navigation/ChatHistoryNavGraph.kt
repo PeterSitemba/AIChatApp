@@ -1,5 +1,6 @@
 package com.bootsnip.aichat.navigation
 
+import android.util.Log
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeOut
@@ -22,7 +23,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
@@ -33,10 +36,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.aallam.openai.api.chat.ChatMessage
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.screens.ChatHistoryDetailScreen
 import com.bootsnip.aichat.ui.screens.ChatHistoryScreen
 import com.bootsnip.aichat.ui.screens.TextSelectionScreen
+import com.bootsnip.aichat.util.FormatChatShare
 import com.bootsnip.aichat.viewmodel.AstraViewModel
 
 
@@ -49,6 +54,7 @@ fun ChatHistoryNavGraph(
     navigateToHome: (Boolean, Int) -> Unit
 ) {
 
+    val clipboardManager = LocalClipboardManager.current
     val currentNavBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentNavBackStackEntry?.destination?.route ?: AllDestinations.CHAT_HISTORY
 
@@ -85,10 +91,11 @@ fun ChatHistoryNavGraph(
                 modifier = Modifier.fillMaxWidth(),
                 navigationIcon = {
                     IconButton(onClick = {
-                        when(currentRoute) {
+                        when (currentRoute) {
                             AllDestinations.CHAT_HISTORY_DETAIL, AllDestinations.TEXT_SELECTION -> {
                                 navController.popBackStack()
                             }
+
                             AllDestinations.CHAT_HISTORY -> navigateToHome(false, 0)
                         }
                     }, content = {
@@ -101,7 +108,19 @@ fun ChatHistoryNavGraph(
                 actions = {
                     if (currentRoute == AllDestinations.CHAT_HISTORY_DETAIL) {
                         IconButton(onClick = {
-                            viewModel.startNewChat()
+                            try {
+                                val gptList = chatHistory?.chatMessageList?.map {
+                                    ChatMessage(
+                                        it.role,
+                                        it.content
+                                    )
+                                }
+                                gptList?.let {
+                                    clipboardManager.setText(AnnotatedString((FormatChatShare(it).chatToShare())))
+                                }
+                            } catch (e: Exception) {
+                                Log.e("Error", e.message.toString())
+                            }
                         }) {
                             Icon(
                                 imageVector = Icons.Filled.Share,
@@ -198,6 +217,7 @@ fun ChatHistoryNavGraph(
                                 AnimatedContentTransitionScope.SlideDirection.Left,
                                 animationSpec = tween(200)
                             )
+
                         AllDestinations.TEXT_SELECTION ->
                             fadeOut(
                                 animationSpec = tween(300)
