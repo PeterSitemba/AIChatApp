@@ -3,11 +3,12 @@ package com.bootsnip.aichat.viewmodel
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.chat.ChatRole
+import com.amplifyframework.auth.AuthUserAttributeKey
 import com.amplifyframework.auth.cognito.AWSCognitoAuthSession
+import com.amplifyframework.auth.cognito.result.AWSCognitoAuthSignOutResult
 import com.amplifyframework.auth.result.AuthSessionResult
 import com.amplifyframework.core.model.temporal.Temporal
 import com.amplifyframework.datastore.events.ModelSyncedEvent
@@ -46,6 +47,9 @@ class AstraViewModel @Inject constructor(
     val errorChatList: MutableStateFlow<MutableList<ChatMessage>> =
         MutableStateFlow(mutableListOf())
 
+    private val _isGPTResponseLoading = MutableStateFlow(false)
+    val isGPTResponseLoading = _isGPTResponseLoading.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
@@ -75,9 +79,22 @@ class AstraViewModel @Inject constructor(
 
     private val currentUserId: MutableStateFlow<String?> = MutableStateFlow(null)
 
+    private val _userName: MutableStateFlow<String?> = MutableStateFlow(null)
+    val userName = _userName.asStateFlow()
+
     private val identity: MutableStateFlow<String?> = MutableStateFlow(null)
 
-    private val isSignedIn: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    private val _isSignedIn: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val isSignedIn = _isSignedIn.asStateFlow()
+
+    private val _showSignInSuccessSnackBar: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val showSignInSuccessSnackBar = _showSignInSuccessSnackBar.asStateFlow()
+
+    private val _showSignOutSuccessSnackBar: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val showSignOutSuccessSnackBar = _showSignOutSuccessSnackBar.asStateFlow()
+
+    private val _showSignOutFailedSnackBar: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val showSignOutFailedSnackBar = _showSignOutFailedSnackBar.asStateFlow()
 
     private val _tokensLocal: MutableStateFlow<List<com.bootsnip.aichat.db.Tokens>> =
         MutableStateFlow(mutableListOf())
@@ -110,6 +127,9 @@ class AstraViewModel @Inject constructor(
     private val _isResponseSelected: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isResponseSelected = _isResponseSelected.asStateFlow()
 
+    private val _isSnackBarSuccess: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val isSnackBarSuccess = _isSnackBarSuccess.asStateFlow()
+
 
     init {
         getDatastoreModelEvent()
@@ -125,7 +145,7 @@ class AstraViewModel @Inject constructor(
 
     fun getGPTResponse(gptQuery: String) {
         showPurchaseScreen.value = tokensError.value
-        _isLoading.value = true
+        _isGPTResponseLoading.value = true
 
         if (tokensDepleted(gptQuery)) return
 
@@ -145,7 +165,7 @@ class AstraViewModel @Inject constructor(
 
             } catch (e: Exception) {
                 //Handle error scenario
-                _isLoading.value = false
+                _isGPTResponseLoading.value = false
             }
         }
     }
@@ -176,7 +196,7 @@ class AstraViewModel @Inject constructor(
                 updateLocalTokenAfterQuery()
 
                 Log.d("GPT RESPONSE ID", response.id)
-                _isLoading.value = false
+                _isGPTResponseLoading.value = false
 
             }
         }
@@ -255,7 +275,7 @@ class AstraViewModel @Inject constructor(
         val tokensDepletedStatus = remainingTokenCount <= 0 && !tokenUnlimited
         if (tokensDepletedStatus) {
             _tokensError.value = true
-            _isLoading.value = false
+            _isGPTResponseLoading.value = false
             showPurchaseScreen.value = tokensError.value
             getChatListWithError(query)
         }
@@ -290,7 +310,7 @@ class AstraViewModel @Inject constructor(
     }
 
     private fun resolveTokenCount() {
-        if (isSignedIn.value) {
+        if (_isSignedIn.value) {
             if (tokensLocal.value.isEmpty()) {
                 val remoteToken = tokensRemote.value
                 if (remoteToken != null) {
@@ -444,11 +464,12 @@ class AstraViewModel @Inject constructor(
         currentRowId.value = uid.toLong()
     }
 
-    private fun fetchSignInState() {
+    fun fetchSignInState() {
         viewModelScope.launch {
             val response = repo.fetchAuthSession() as AWSCognitoAuthSession
-            isSignedIn.value = response.isSignedIn
+            _isSignedIn.value = response.isSignedIn
             fetchCurrentUser()
+            fetchUserAttributes()
         }
     }
 
@@ -463,12 +484,24 @@ class AstraViewModel @Inject constructor(
         }
     }
 
+    private fun fetchUserAttributes() {
+        viewModelScope.launch {
+            try {
+                val response = repo.fetchUserAttributes()
+                _userName.value = response.find { it.key == AuthUserAttributeKey.email() }?.value
+
+            } catch (e: Exception) {
+                Log.e("SignedOut", e.message.toString() + " ${currentUserId.value}")
+            }
+        }
+    }
+
     fun fetchChatHistoryWithAuthSession() {
         viewModelScope.launch {
             val response = repo.fetchAuthSession() as AWSCognitoAuthSession
-            isSignedIn.value = response.isSignedIn
-            if (isSignedIn.value) getChatHistoryWithCurrentUser()
-            Log.i("IS SIGNED IN", isSignedIn.value.toString())
+            _isSignedIn.value = response.isSignedIn
+            if (_isSignedIn.value) getChatHistoryWithCurrentUser()
+            Log.i("IS SIGNED IN", _isSignedIn.value.toString())
             when (response.identityIdResult.type) {
                 AuthSessionResult.Type.SUCCESS -> {
                     identity.value = response.identityIdResult.value
@@ -504,7 +537,7 @@ class AstraViewModel @Inject constructor(
     }
 
     private fun syncChatHistory() {
-        if (isSignedIn.value) {
+        if (_isSignedIn.value) {
             getAllChatHistory()
             syncChatHistoryDownStream()
             syncChatHistoryUpstream()
@@ -672,5 +705,49 @@ class AstraViewModel @Inject constructor(
                     Log.i("MODEL SYNCED", "Name of model synced is: ${event.model}")
                 }
         }
+    }
+
+    fun signOut() {
+        _isLoading.value = true
+        viewModelScope.launch {
+            try {
+                when (repo.signOut()) {
+                    is AWSCognitoAuthSignOutResult.CompleteSignOut -> {
+                        fetchSignInState()
+                        _isLoading.value = false
+                        showSignOutSuccessSnackBar(true)
+                    }
+
+                    is AWSCognitoAuthSignOutResult.PartialSignOut -> {
+                        fetchSignInState()
+                        _isLoading.value = false
+                        showSignOutSuccessSnackBar(true)
+                    }
+
+                    is AWSCognitoAuthSignOutResult.FailedSignOut -> {
+                        _isLoading.value = false
+                        showSignOutFailedSnackBar(true)
+                    }
+                }
+            } catch (e: Exception) {
+                _isLoading.value = false
+                Log.e("SignedOut", e.message.toString() + " ${currentUserId.value}")
+            }
+        }
+    }
+
+    fun showSignInSuccessSnackBar(showSuccess: Boolean) {
+        _showSignInSuccessSnackBar.value = showSuccess
+        _isSnackBarSuccess.value = true
+    }
+
+    fun showSignOutSuccessSnackBar(showSuccess: Boolean) {
+        _showSignOutSuccessSnackBar.value = showSuccess
+        _isSnackBarSuccess.value = true
+    }
+
+    fun showSignOutFailedSnackBar(showFailed: Boolean) {
+        _showSignOutFailedSnackBar.value = showFailed
+        _isSnackBarSuccess.value = false
     }
 }

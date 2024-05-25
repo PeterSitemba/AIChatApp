@@ -11,6 +11,13 @@
     <string name="retry">Retry</string>
     <string name="continue_string">Continue</string>
     <string name="new_chat">New Chat</string>
+    <string name="start">Start</string>
     <string name="new_chat_body">Start a new chat? Don\'t worry, you can find your previous chats in Chat History</string>
     <string name="error_noConnection">No internet connection.</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="cancel">Cancel</string>
+    <string name="sign_out_body">Sign out of the app? We won\'t be able to backup your chats</string>
+    <string name="success_login">Successfully signed in</string>
+    <string name="success_logout">Successfully signed out</string>
+    <string name="failed_logout">Failed to sign out. Please try again</string>
 </resources>

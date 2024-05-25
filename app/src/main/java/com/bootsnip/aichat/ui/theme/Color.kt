@@ -15,4 +15,7 @@ val Orange = Color(0xFFFFB74D)
 
 val DarkGrey = Color(0xFF36454F)
 
+val DarkGreen = Color(0xFF009900)
+val DarkRed = Color(0xFF990000)
+
 val backgroundColor = Color(red = 28, green = 27, blue = 31).toArgb()

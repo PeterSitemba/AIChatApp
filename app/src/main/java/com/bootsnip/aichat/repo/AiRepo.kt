@@ -7,6 +7,9 @@ import com.aallam.openai.api.chat.ChatRole
 import com.aallam.openai.client.OpenAI
 import com.amplifyframework.auth.AuthSession
 import com.amplifyframework.auth.AuthUser
+import com.amplifyframework.auth.AuthUserAttribute
+import com.amplifyframework.auth.options.AuthSignOutOptions
+import com.amplifyframework.auth.result.AuthSignOutResult
 import com.amplifyframework.core.model.query.ObserveQueryOptions
 import com.amplifyframework.core.model.query.Where
 import com.amplifyframework.datastore.DataStoreChannelEventName
@@ -145,6 +148,20 @@ class AiRepo @Inject constructor(
     override suspend fun getCurrentUser(): AuthUser =
         withContext(ioDispatcher) {
             Amplify.Auth.getCurrentUser()
+        }
+
+    override suspend fun fetchUserAttributes(): List<AuthUserAttribute> =
+        withContext(ioDispatcher) {
+            Amplify.Auth.fetchUserAttributes()
+        }
+
+    override suspend fun signOut(): AuthSignOutResult =
+        withContext(ioDispatcher) {
+            val options = AuthSignOutOptions.builder()
+                .globalSignOut(true)
+                .build()
+
+            Amplify.Auth.signOut(options)
         }
 
     override suspend fun observeChatHistory(userId: String): Flow<DataStoreItemChange<ChatHistoryRemote>> =

@@ -4,6 +4,8 @@ import com.aallam.openai.api.chat.ChatCompletion
 import com.aallam.openai.api.chat.ChatMessage
 import com.amplifyframework.auth.AuthSession
 import com.amplifyframework.auth.AuthUser
+import com.amplifyframework.auth.AuthUserAttribute
+import com.amplifyframework.auth.result.AuthSignOutResult
 import com.amplifyframework.datastore.DataStoreItemChange
 import com.amplifyframework.datastore.DataStoreQuerySnapshot
 import com.amplifyframework.datastore.generated.model.ChatGPTLLMs
@@ -53,6 +55,10 @@ interface IAiRepo {
     suspend fun queryGPTLLMs(): Flow<ChatGPTLLMs>
 
     suspend fun getCurrentUser(): AuthUser
+
+    suspend fun fetchUserAttributes(): List<AuthUserAttribute>
+
+    suspend fun signOut(): AuthSignOutResult
 
     suspend fun observeChatHistory(userId: String): Flow<DataStoreItemChange<ChatHistoryRemote>>
 

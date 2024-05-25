@@ -74,7 +74,7 @@ fun HomeScreen(
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val gptChatList = viewModel.chatList.collectAsStateWithLifecycle().value
-    val isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value
+    val isLoading = viewModel.isGPTResponseLoading.collectAsStateWithLifecycle().value
     val tokenError = viewModel.tokensError.collectAsStateWithLifecycle().value
     val errorList = viewModel.errorChatList.collectAsStateWithLifecycle().value
 

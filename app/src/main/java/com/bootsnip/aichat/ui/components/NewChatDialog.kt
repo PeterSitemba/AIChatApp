@@ -59,7 +59,7 @@ fun NewChatDialog(
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(
-                        text = stringResource(id = R.string.new_chat),
+                        text = stringResource(id = R.string.start),
                         fontSize = 16.sp,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )

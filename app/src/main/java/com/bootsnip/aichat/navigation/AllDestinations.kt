@@ -31,9 +31,6 @@ class AppNavigationActions(private val navController: NavHostController) {
 
     fun navigateToAuthentication() {
         navController.navigate(AUTHENTICATION) {
-            popUpTo(navController.graph.findStartDestination().id) {
-                saveState = true
-            }
             launchSingleTop = true
             restoreState = true
         }

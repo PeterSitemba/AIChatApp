@@ -36,6 +36,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
@@ -62,8 +64,11 @@ import androidx.navigation.compose.rememberNavController
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.activities.ChatHistoryActivity
 import com.bootsnip.aichat.ui.components.AppDrawer
+import com.bootsnip.aichat.ui.components.AstraSnackBar
 import com.bootsnip.aichat.ui.components.GPTDropDownList
 import com.bootsnip.aichat.ui.components.NewChatDialog
+import com.bootsnip.aichat.ui.components.ProgressDialog
+import com.bootsnip.aichat.ui.components.SignOutDialog
 import com.bootsnip.aichat.ui.screens.AuthenticationScreen
 import com.bootsnip.aichat.ui.screens.HomeScreen
 import com.bootsnip.aichat.ui.screens.PurchaseSubscriptionScreen
@@ -86,21 +91,36 @@ fun AstraNavGraph(
     viewModel: AstraViewModel = hiltViewModel()
 ) {
 
+    val isSignedIn = viewModel.isSignedIn.collectAsStateWithLifecycle().value
+    val userName = viewModel.userName.collectAsStateWithLifecycle().value
     val gptList = viewModel.gptLLMs.collectAsStateWithLifecycle().value
     val selectedGPTLLM = viewModel.selectedGPTLLM.collectAsStateWithLifecycle().value
     val tokenCount = viewModel.tokensCount.collectAsStateWithLifecycle().value
     val tokenLocal = viewModel.tokensLocal.collectAsStateWithLifecycle().value
     val showPurchaseScreen = viewModel.showPurchaseScreen.collectAsStateWithLifecycle().value
+    val showSignInSuccess = viewModel.showSignInSuccessSnackBar.collectAsStateWithLifecycle().value
+    val showSignOutSuccess =
+        viewModel.showSignOutSuccessSnackBar.collectAsStateWithLifecycle().value
+    val showSignOutFailed = viewModel.showSignOutFailedSnackBar.collectAsStateWithLifecycle().value
+    val isSnackBarSuccess = viewModel.isSnackBarSuccess.collectAsStateWithLifecycle().value
+    val isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value
     val currentNavBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentNavBackStackEntry?.destination?.route ?: AllDestinations.HOME
     val navigationActions = remember(navController) {
         AppNavigationActions(navController)
     }
+    val scope = rememberCoroutineScope()
+    val snackBarHostState = remember { SnackbarHostState() }
+
     var showDropDown by remember {
         mutableStateOf(false)
     }
 
     var showNewChatDialog by remember {
+        mutableStateOf(false)
+    }
+
+    var showSignOutDialog by remember {
         mutableStateOf(false)
     }
 
@@ -136,6 +156,44 @@ fun AstraNavGraph(
         )
     }
 
+    if (showSignOutDialog) {
+        SignOutDialog(
+            showSignOutDialog = { showSignOutDialog = it },
+            signOutClicked = { viewModel.signOut() }
+        )
+    }
+
+    LaunchedEffect(showSignInSuccess) {
+        if (showSignInSuccess) {
+            scope.launch {
+                snackBarHostState.showSnackbar(context.getString(R.string.success_login))
+                viewModel.showSignInSuccessSnackBar(false)
+            }
+        }
+    }
+
+    LaunchedEffect(showSignOutSuccess) {
+        if (showSignOutSuccess) {
+            scope.launch {
+                snackBarHostState.showSnackbar(context.getString(R.string.success_logout))
+                viewModel.showSignOutSuccessSnackBar(false)
+            }
+        }
+    }
+
+    LaunchedEffect(showSignOutFailed) {
+        if (showSignOutFailed) {
+            scope.launch {
+                snackBarHostState.showSnackbar(context.getString(R.string.failed_logout))
+                viewModel.showSignOutFailedSnackBar(false)
+            }
+        }
+    }
+
+    if(isLoading) {
+        ProgressDialog()
+    }
+
     ModalNavigationDrawer(
         drawerContent = {
             if (currentRoute != AllDestinations.AUTHENTICATION) {
@@ -145,6 +203,8 @@ fun AstraNavGraph(
                 AppDrawer(
                     route = currentRoute,
                     unlimited = isUnlimited,
+                    isSignedIn = isSignedIn,
+                    userName = userName.orEmpty(),
                     navigateToHome = { navigationActions.navigateToHome() },
                     navigateToChatHistory = {
                         activityResultLauncher.launch(
@@ -156,10 +216,12 @@ fun AstraNavGraph(
                     },
                     navigateToAuthentication = {
                         navigationActions.navigateToAuthentication()
-
                     },
                     navigateToSubscription = {
                         navigationActions.navigateToSubscription()
+                    },
+                    signOutClicked = {
+                        showSignOutDialog = true
                     },
                     closeDrawer = { coroutineScope.launch { drawerState.close() } },
                     modifier = Modifier
@@ -296,7 +358,16 @@ fun AstraNavGraph(
 
                     }
                 )
-            }, modifier = Modifier
+            },
+            modifier = Modifier,
+            snackbarHost = {
+                SnackbarHost(hostState = snackBarHostState) { snackbarData ->
+                    AstraSnackBar(
+                        message = snackbarData.visuals.message,
+                        success = isSnackBarSuccess
+                    )
+                }
+            }
         ) {
             NavHost(
                 navController = navController,
@@ -358,19 +429,9 @@ fun AstraNavGraph(
                 }
 
                 composable(
-                    route = AllDestinations.AUTHENTICATION,
-                    popExitTransition = {
-                        when (targetState.destination.route) {
-                            AllDestinations.HOME -> {
-                                scaleOut(targetScale = 0.92f, animationSpec = tween(90)) +
-                                        fadeOut(animationSpec = tween(90))
-                            }
-
-                            else -> null
-                        }
-                    }
+                    route = AllDestinations.AUTHENTICATION
                 ) {
-                    AuthenticationScreen()
+                    AuthenticationScreen(viewModel, navController)
                 }
 
                 composable(
