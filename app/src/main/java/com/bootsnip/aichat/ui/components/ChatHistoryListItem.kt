@@ -2,6 +2,7 @@ package com.bootsnip.aichat.ui.components
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -13,6 +14,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.constraintlayout.compose.ConstraintLayout
@@ -26,14 +29,17 @@ import com.bootsnip.aichat.viewmodel.AstraViewModel
 @Composable
 fun ChatHistoryListItem(
     modifier: Modifier,
-    placeHolder: String,
+    userPlaceHolder: String,
+    astraPlaceHolder: String,
     id: Int,
     isFav: Boolean = false,
     viewModel: AstraViewModel = hiltViewModel()
 ) {
 
     ConstraintLayout(
-        modifier = modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp)
     ) {
 
         val (profilePic, chat, favIcon) = createRefs()
@@ -44,23 +50,41 @@ fun ChatHistoryListItem(
                 .size(45.dp)
                 .constrainAs(profilePic) {
                     start.linkTo(parent.start)
+                    top.linkTo(parent.top)
+                    bottom.linkTo(parent.bottom)
                 },
             painter = painterResource(id = R.drawable.logo),
             contentDescription = "logo"
         )
 
-        Text(
-            text = placeHolder,
-            maxLines = 2,
-            fontSize = 14.sp,
-            modifier = Modifier.constrainAs(chat) {
-                start.linkTo(profilePic.end)
-                end.linkTo(favIcon.start)
-                top.linkTo(parent.top)
-                bottom.linkTo(parent.bottom)
-                width = Dimension.fillToConstraints
-            }
-        )
+        Column(
+            modifier = Modifier
+                .constrainAs(chat) {
+                    start.linkTo(profilePic.end)
+                    end.linkTo(favIcon.start)
+                    top.linkTo(parent.top)
+                    bottom.linkTo(parent.bottom)
+                    width = Dimension.fillToConstraints
+                }
+                .padding(top = 6.dp, bottom = 6.dp)
+        ) {
+            Text(
+                text = userPlaceHolder,
+                maxLines = 1,
+                fontWeight = FontWeight.SemiBold,
+                overflow = TextOverflow.Ellipsis,
+                fontSize = 16.sp
+            )
+
+            Text(
+                text = astraPlaceHolder,
+                overflow = TextOverflow.Ellipsis,
+                maxLines = 1,
+                fontSize = 12.sp
+            )
+
+        }
+
 
         Icon(
             modifier = Modifier
@@ -74,13 +98,13 @@ fun ChatHistoryListItem(
                     viewModel.updateChatHistoryStatus(
                         ChatHistoryUpdateFav(
                             uid = id,
-                            fav = if(isFav) 0 else 1
+                            fav = if (isFav) 0 else 1
                         )
                     )
                 },
             imageVector = Icons.Default.Star,
             contentDescription = "",
-            tint = if(isFav) Orange else Color.White
+            tint = if (isFav) Orange else Color.White
         )
     }
 }

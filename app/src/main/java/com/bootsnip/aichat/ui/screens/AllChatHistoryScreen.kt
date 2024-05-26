@@ -36,7 +36,8 @@ fun AllChatHistoryScreen(
                         viewModel.selectedChatHistory.value = it.uid!!
                         navigationActions.navigateToChatHistoryDetail()
                     },
-                    placeHolder = it.chatMessageList?.get(0)?.content ?: "Message",
+                    userPlaceHolder = it.chatMessageList?.get(0)?.content ?: "Message",
+                    astraPlaceHolder = it.chatMessageList?.get(1)?.content ?: "Message",
                     isFav = it.fav == 1,
                     id = it.uid!!
                 )

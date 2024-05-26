@@ -53,7 +53,7 @@ fun AppDrawer(
         NavigationDrawerItem(
             label = {
                 Text(
-                    text = "Home",
+                    text = stringResource(R.string.home),
                     style = MaterialTheme.typography.labelSmall
                 )
             },
@@ -67,7 +67,12 @@ fun AppDrawer(
         )
 
         NavigationDrawerItem(
-            label = { Text(text = "Chat History", style = MaterialTheme.typography.labelSmall) },
+            label = {
+                Text(
+                    text = stringResource(id = R.string.chat_history),
+                    style = MaterialTheme.typography.labelSmall
+                )
+            },
             selected = route == AllDestinations.CHAT_HISTORY,
             onClick = {
                 navigateToChatHistory()
@@ -80,7 +85,7 @@ fun AppDrawer(
             NavigationDrawerItem(
                 label = {
                     Text(
-                        text = "Unlock Pro Features",
+                        text = stringResource(R.string.unlock_pro_features),
                         style = MaterialTheme.typography.labelSmall
                     )
                 },
@@ -105,7 +110,9 @@ fun AppDrawer(
 
         NavigationDrawerItem(
             label = {
-                Text(text = if (isSignedIn) userName.ifEmpty { "User" } else "Sign In",
+                Text(text = if (isSignedIn) userName.ifEmpty { stringResource(R.string.user) } else stringResource(
+                    R.string.sign_in
+                ),
                     style = MaterialTheme.typography.labelSmall)
             },
             selected = route == AllDestinations.AUTHENTICATION,

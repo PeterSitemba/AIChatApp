@@ -69,6 +69,7 @@ fun SignOutDialog(
                 Text(
                     text = stringResource(id = R.string.sign_out_body),
                     textAlign = TextAlign.Center,
+                    fontSize = 14.sp,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)

@@ -10,14 +10,6 @@ type ChatGPTLLMs @model @auth(rules: [{allow: public}]) {
   display_name: String
 }
 
-type TokensRemote @model @auth(rules: [{allow: public}]) {
-  id: ID!
-  remaining_count: Int!
-  user_id: String!
-  unlimited: Boolean!
-  date: AWSDate!
-}
-
 type ChatMessageObject {
   role: String!
   content: String!
@@ -36,5 +28,6 @@ type ChatHistoryRemote @model @auth(rules: [{allow: public}]) {
 type OpenAi @model @auth(rules: [{allow: public}]) {
   id: ID!
   open_ai: String!
+  token_count: Int
 }
  

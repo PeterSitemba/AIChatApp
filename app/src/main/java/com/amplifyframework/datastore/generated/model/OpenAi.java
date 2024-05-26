@@ -28,8 +28,10 @@ import static com.amplifyframework.core.model.query.predicate.QueryField.field;
 public final class OpenAi implements Model {
   public static final QueryField ID = field("OpenAi", "id");
   public static final QueryField OPEN_AI = field("OpenAi", "open_ai");
+  public static final QueryField TOKEN_COUNT = field("OpenAi", "token_count");
   private final @ModelField(targetType="ID", isRequired = true) String id;
   private final @ModelField(targetType="String", isRequired = true) String open_ai;
+  private final @ModelField(targetType="Int") Integer token_count;
   private @ModelField(targetType="AWSDateTime", isReadOnly = true) Temporal.DateTime createdAt;
   private @ModelField(targetType="AWSDateTime", isReadOnly = true) Temporal.DateTime updatedAt;
   /** @deprecated This API is internal to Amplify and should not be used. */
@@ -46,6 +48,10 @@ public final class OpenAi implements Model {
       return open_ai;
   }
   
+  public Integer getTokenCount() {
+      return token_count;
+  }
+  
   public Temporal.DateTime getCreatedAt() {
       return createdAt;
   }
@@ -54,9 +60,10 @@ public final class OpenAi implements Model {
       return updatedAt;
   }
   
-  private OpenAi(String id, String open_ai) {
+  private OpenAi(String id, String open_ai, Integer token_count) {
     this.id = id;
     this.open_ai = open_ai;
+    this.token_count = token_count;
   }
   
   @Override
@@ -69,6 +76,7 @@ public final class OpenAi implements Model {
       OpenAi openAi = (OpenAi) obj;
       return ObjectsCompat.equals(getId(), openAi.getId()) &&
               ObjectsCompat.equals(getOpenAi(), openAi.getOpenAi()) &&
+              ObjectsCompat.equals(getTokenCount(), openAi.getTokenCount()) &&
               ObjectsCompat.equals(getCreatedAt(), openAi.getCreatedAt()) &&
               ObjectsCompat.equals(getUpdatedAt(), openAi.getUpdatedAt());
       }
@@ -79,6 +87,7 @@ public final class OpenAi implements Model {
     return new StringBuilder()
       .append(getId())
       .append(getOpenAi())
+      .append(getTokenCount())
       .append(getCreatedAt())
       .append(getUpdatedAt())
       .toString()
@@ -91,6 +100,7 @@ public final class OpenAi implements Model {
       .append("OpenAi {")
       .append("id=" + String.valueOf(getId()) + ", ")
       .append("open_ai=" + String.valueOf(getOpenAi()) + ", ")
+      .append("token_count=" + String.valueOf(getTokenCount()) + ", ")
       .append("createdAt=" + String.valueOf(getCreatedAt()) + ", ")
       .append("updatedAt=" + String.valueOf(getUpdatedAt()))
       .append("}")
@@ -112,13 +122,15 @@ public final class OpenAi implements Model {
   public static OpenAi justId(String id) {
     return new OpenAi(
       id,
+      null,
       null
     );
   }
   
   public CopyOfBuilder copyOfBuilder() {
     return new CopyOfBuilder(id,
-      open_ai);
+      open_ai,
+      token_count);
   }
   public interface OpenAiStep {
     BuildStep openAi(String openAi);
@@ -128,19 +140,22 @@ public final class OpenAi implements Model {
   public interface BuildStep {
     OpenAi build();
     BuildStep id(String id);
+    BuildStep tokenCount(Integer tokenCount);
   }
   
 
   public static class Builder implements OpenAiStep, BuildStep {
     private String id;
     private String open_ai;
+    private Integer token_count;
     public Builder() {
       
     }
     
-    private Builder(String id, String open_ai) {
+    private Builder(String id, String open_ai, Integer token_count) {
       this.id = id;
       this.open_ai = open_ai;
+      this.token_count = token_count;
     }
     
     @Override
@@ -149,13 +164,20 @@ public final class OpenAi implements Model {
         
         return new OpenAi(
           id,
-          open_ai);
+          open_ai,
+          token_count);
     }
     
     @Override
      public BuildStep openAi(String openAi) {
         Objects.requireNonNull(openAi);
         this.open_ai = openAi;
+        return this;
+    }
+    
+    @Override
+     public BuildStep tokenCount(Integer tokenCount) {
+        this.token_count = tokenCount;
         return this;
     }
     
@@ -171,14 +193,19 @@ public final class OpenAi implements Model {
   
 
   public final class CopyOfBuilder extends Builder {
-    private CopyOfBuilder(String id, String openAi) {
-      super(id, open_ai);
+    private CopyOfBuilder(String id, String openAi, Integer tokenCount) {
+      super(id, open_ai, token_count);
       Objects.requireNonNull(open_ai);
     }
     
     @Override
      public CopyOfBuilder openAi(String openAi) {
       return (CopyOfBuilder) super.openAi(openAi);
+    }
+    
+    @Override
+     public CopyOfBuilder tokenCount(Integer tokenCount) {
+      return (CopyOfBuilder) super.tokenCount(tokenCount);
     }
   }
   

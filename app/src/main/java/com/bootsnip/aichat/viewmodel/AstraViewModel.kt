@@ -15,7 +15,6 @@ import com.amplifyframework.datastore.events.ModelSyncedEvent
 import com.amplifyframework.datastore.generated.model.ChatGPTLLMs
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.ChatMessageObject
-import com.amplifyframework.datastore.generated.model.Tokens
 import com.bootsnip.aichat.db.ChatHistory
 import com.bootsnip.aichat.db.ChatHistoryUpdate
 import com.bootsnip.aichat.db.ChatHistoryUpdateFav
@@ -100,13 +99,13 @@ class AstraViewModel @Inject constructor(
         MutableStateFlow(mutableListOf())
     val tokensLocal = _tokensLocal.asStateFlow()
 
-    private val tokensRemote: MutableStateFlow<Tokens?> = MutableStateFlow(null)
-
     private val _tokensError: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val tokensError = _tokensError.asStateFlow()
 
     private val _tokensCount: MutableStateFlow<Int> = MutableStateFlow(3)
     val tokensCount = _tokensCount.asStateFlow()
+
+    private val remoteTokensCount: MutableStateFlow<Int> = MutableStateFlow(3)
 
     val showPurchaseScreen: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
@@ -211,6 +210,8 @@ class AstraViewModel @Inject constructor(
                 .collect {
                     Log.i("OpenAI KEY", "key ${it.openAi}")
                     openAiAuth.value = it.openAi
+                    remoteTokensCount.value = it.tokenCount
+                    updateTokensFromRemote()
                 }
         }
     }
@@ -242,6 +243,8 @@ class AstraViewModel @Inject constructor(
                     try {
                         Log.i("OpenAI KEY", "key ${it.items}")
                         openAiAuth.value = it.items.first().openAi
+                        remoteTokensCount.value = it.items.first().tokenCount
+                        updateTokensFromRemote()
                     } catch (e: Exception) {
                         Log.e("OpenAI KEY", e.message.toString())
                     }
@@ -266,6 +269,21 @@ class AstraViewModel @Inject constructor(
                         Log.e("GPT LLM List", e.message.toString())
                     }
                 }
+        }
+    }
+
+    private fun updateTokensFromRemote() {
+        if(tokensLocal.value.isNotEmpty()){
+            val tokenLocal = tokensLocal.value[0]
+            if(tokensCount.value == 3) {
+                val tokensUpdate = TokensUpdate(
+                    tokenLocal.uid,
+                    remoteTokensCount.value,
+                    false,
+                    DateUtil.currentDate()
+                )
+                updateLocalToken(tokensUpdate)
+            }
         }
     }
 
@@ -310,29 +328,14 @@ class AstraViewModel @Inject constructor(
     }
 
     private fun resolveTokenCount() {
-        if (_isSignedIn.value) {
-            if (tokensLocal.value.isEmpty()) {
-                val remoteToken = tokensRemote.value
-                if (remoteToken != null) {
-                    if (remoteToken.unlimited) {
-                        insertFreshToken(true)
-                    } else {
-                        insertFreshToken()
-                    }
-                } else {
-                    insertFreshToken()
-                }
-            }
-        } else {
-            if (tokensLocal.value.isEmpty()) {
-                insertFreshToken()
-            }
+        if (tokensLocal.value.isEmpty()) {
+            insertFreshToken()
         }
     }
 
     private fun insertFreshToken(unlimited: Boolean = false) {
         val token = com.bootsnip.aichat.db.Tokens(
-            remainingCount = 3,
+            remainingCount = remoteTokensCount.value,
             unlimited = unlimited,
             date = DateUtil.currentDate()
         )
@@ -352,14 +355,12 @@ class AstraViewModel @Inject constructor(
             if (tokenLocal.date != DateUtil.currentDate()) {
                 val tokensUpdate = TokensUpdate(
                     tokenLocal.uid,
-                    3,
+                    remoteTokensCount.value,
                     false,
                     DateUtil.currentDate()
                 )
                 updateLocalToken(tokensUpdate)
             }
-            Log.i("DATE", tokenLocal.date)
-            Log.i("DATE", DateUtil.currentDate())
         }
     }
 

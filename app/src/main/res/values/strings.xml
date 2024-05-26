@@ -20,4 +20,16 @@
     <string name="success_login">Successfully signed in</string>
     <string name="success_logout">Successfully signed out</string>
     <string name="failed_logout">Failed to sign out. Please try again</string>
+    <string name="enjoy_unlimited_prompts">Enjoy <b>UNLIMITED</b> prompts</string>
+    <string name="ad_free_experience">Enjoy an <b>AD-FREE</b> experience</string>
+    <string name="pro_gpt_models_header">Access to PRO GPT models</string>
+    <string name="pro_gpt_models_body">Access the latest and greatest from Chat GPT with <b>GPT - 4</b></string>
+    <string name="benefits_header">"What you get with "</string>
+    <string name="no_ads">No Ads</string>
+    <string name="no_limits">No Limits</string>
+    <string name="home">Home</string>
+    <string name="unlock_pro_features">Unlock Pro Features</string>
+    <string name="user">User</string>
+    <string name="sign_in">Sign In</string>
+    <string name="you">You</string>
 </resources>

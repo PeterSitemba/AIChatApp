@@ -1,6 +1,7 @@
 package com.bootsnip.aichat.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,12 +30,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.theme.DarkGrey
 import com.bootsnip.aichat.ui.theme.Purple80
+import com.bootsnip.aichat.util.StyledText
+import com.bootsnip.aichat.util.textResource
 
 @Composable
 fun PurchaseSubscriptionScreen(
@@ -63,7 +67,7 @@ fun PurchaseSubscriptionScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
         ) {
@@ -78,11 +82,12 @@ fun PurchaseSubscriptionScreen(
             )
 
             Text(
-                text = "Unlock Pro Features",
+                text = "Unlock PRO Features",
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 36.dp),
                 textAlign = TextAlign.Center,
+                fontWeight = FontWeight.SemiBold,
                 fontSize = 32.sp
             )
 
@@ -200,6 +205,8 @@ fun PurchaseSubscriptionScreen(
                     }
                 }
             }
+
+            Benefits(Modifier.padding(top = 16.dp))
         }
 
         Button(
@@ -219,4 +226,85 @@ fun PurchaseSubscriptionScreen(
 
     }
 
+}
+
+@Composable
+private fun Benefits(
+    modifier: Modifier
+) {
+    Column(modifier) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.benefits_header),
+                textAlign = TextAlign.Center,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Icon(
+                painter = painterResource(id = R.drawable.professional_hexagon),
+                contentDescription = "pro",
+                modifier = Modifier
+                    .size(45.dp)
+            )
+
+        }
+
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                modifier = Modifier
+                    .padding(end = 16.dp)
+                    .size(30.dp),
+                painter = painterResource(id = R.drawable.logo),
+                contentDescription = "logo"
+            )
+
+            Column {
+                Text(
+                    text = stringResource(R.string.pro_gpt_models_header),
+                    fontWeight = FontWeight.SemiBold
+                )
+                StyledText(text = textResource(R.string.pro_gpt_models_body))
+            }
+
+        }
+
+        Row(Modifier.padding(top = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                modifier = Modifier
+                    .padding(end = 16.dp)
+                    .size(30.dp),
+                painter = painterResource(id = R.drawable.advertisements_off),
+                contentDescription = "logo"
+            )
+
+            Column {
+                Text(text = stringResource(R.string.no_ads), fontWeight = FontWeight.SemiBold)
+                StyledText(text = textResource(R.string.ad_free_experience))
+            }
+
+        }
+
+        Row(Modifier.padding(top = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                modifier = Modifier
+                    .padding(end = 16.dp)
+                    .size(30.dp),
+                painter = painterResource(id = R.drawable.creation),
+                contentDescription = "logo"
+            )
+
+            Column {
+                Text(text = stringResource(R.string.no_limits), fontWeight = FontWeight.SemiBold)
+                StyledText(text = textResource(R.string.enjoy_unlimited_prompts))
+            }
+        }
+    }
 }

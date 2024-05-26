@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
@@ -104,6 +103,7 @@ fun AstraNavGraph(
     val showSignOutFailed = viewModel.showSignOutFailedSnackBar.collectAsStateWithLifecycle().value
     val isSnackBarSuccess = viewModel.isSnackBarSuccess.collectAsStateWithLifecycle().value
     val isLoading = viewModel.isLoading.collectAsStateWithLifecycle().value
+    val chatList = viewModel.chatList.collectAsStateWithLifecycle().value
     val currentNavBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentNavBackStackEntry?.destination?.route ?: AllDestinations.HOME
     val navigationActions = remember(navController) {
@@ -190,7 +190,7 @@ fun AstraNavGraph(
         }
     }
 
-    if(isLoading) {
+    if (isLoading) {
         ProgressDialog()
     }
 
@@ -343,12 +343,15 @@ fun AstraNavGraph(
                                 }
 
                                 IconButton(onClick = {
-                                    showNewChatDialog = true
+                                    if(chatList.isNotEmpty()){
+                                        showNewChatDialog = true
+                                    }
                                 }) {
                                     Icon(
-                                        imageVector = Icons.Filled.AddCircle,
+                                        painter = painterResource(id = R.drawable.circle_edit_outline),
                                         contentDescription = "Localized description",
-                                        tint = MaterialTheme.colorScheme.secondary
+                                        tint = MaterialTheme.colorScheme.secondary,
+                                        modifier = Modifier.size(30.dp)
                                     )
                                 }
                             }
