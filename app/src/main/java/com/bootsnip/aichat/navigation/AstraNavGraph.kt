@@ -429,7 +429,17 @@ fun AstraNavGraph(
                 }
 
                 composable(
-                    route = AllDestinations.AUTHENTICATION
+                    route = AllDestinations.AUTHENTICATION,
+                    popExitTransition = {
+                        when (targetState.destination.route) {
+                            AllDestinations.HOME -> {
+                                scaleOut(targetScale = 0.92f, animationSpec = tween(90)) +
+                                        fadeOut(animationSpec = tween(90))
+                            }
+
+                            else -> null
+                        }
+                    }
                 ) {
                     AuthenticationScreen(viewModel, navController)
                 }
