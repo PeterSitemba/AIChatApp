@@ -1,3 +1,14 @@
+type TokenManagement @model @auth(rules: [{allow: public}]) {
+  id: ID!
+  user_id: String
+  identity_id: String!
+  unlimited: Boolean!
+  dummy_key: String
+  prompt_tokens: Int!
+  completion_tokens: Int!
+  total_tokens: Int!
+}
+
 type Suggestions @model @auth(rules: [{allow: public}]) {
   id: ID!
   suggestion: String

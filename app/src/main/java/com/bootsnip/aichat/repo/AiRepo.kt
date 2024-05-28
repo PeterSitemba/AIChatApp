@@ -19,6 +19,7 @@ import com.amplifyframework.datastore.DataStoreQuerySnapshot
 import com.amplifyframework.datastore.generated.model.ChatGPTLLMs
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.OpenAi
+import com.amplifyframework.datastore.generated.model.TokenManagement
 import com.amplifyframework.hub.HubChannel
 import com.amplifyframework.hub.HubEvent
 import com.amplifyframework.kotlin.core.Amplify
@@ -207,6 +208,85 @@ class AiRepo @Inject constructor(
     override suspend fun dataStoreEventHub(): Flow<HubEvent<*>> =
         Amplify.Hub.subscribe(HubChannel.DATASTORE)
         { it.name == DataStoreChannelEventName.MODEL_SYNCED.toString() }
+
+    override suspend fun saveTokenManagement(tokenManagement: TokenManagement) {
+        withContext(ioDispatcher) {
+            try {
+                Amplify.DataStore.save(tokenManagement)
+                Log.i("Token Management", "Saved token management.")
+            } catch (error: DataStoreException) {
+                Log.e("Token Management", "Save failed.", error)
+            }
+        }
+    }
+
+    override suspend fun updateTokenManagement(tokenManagement: TokenManagement) {
+        val whereClause = if(tokenManagement.userId.isNotEmpty())
+            TokenManagement.USER_ID.eq(tokenManagement.userId)
+        else
+            TokenManagement.IDENTITY_ID.eq(tokenManagement.identityId)
+
+        Amplify.DataStore.query(
+            TokenManagement::class,
+            Where.matches(whereClause)
+        )
+            .catch { Log.e("Token Management", "Query failed", it) }
+            .map {
+                it.copyOfBuilder()
+                    .userId(tokenManagement.userId)
+                    .identityId(tokenManagement.identityId)
+                    .unlimited(tokenManagement.unlimited)
+                    .promptTokens(tokenManagement.promptTokens)
+                    .completionTokens(tokenManagement.completionTokens)
+                    .totalTokens(tokenManagement.totalTokens)
+                    .build()
+            }
+            .onEach { Amplify.DataStore.save(it) }
+            .catch { Log.e("Token Management", "Update failed", it) }
+            .collect { Log.i("Token Management", "Updated a post") }
+    }
+
+    override suspend fun observeTokenManagement(userId: String, identityId: String): Flow<DataStoreQuerySnapshot<TokenManagement>> =
+        withContext(ioDispatcher) {
+            val whereClause = if(userId.isNotEmpty())
+                TokenManagement.USER_ID.eq(userId)
+            else
+                TokenManagement.IDENTITY_ID.eq(identityId)
+
+            Amplify.DataStore.observeQuery(
+                TokenManagement::class,
+                ObserveQueryOptions(whereClause, null)
+            )
+        }
+
+    override suspend fun queryTokenManagement(userId: String, identityId: String): Flow<TokenManagement> =
+        withContext(ioDispatcher) {
+            val whereClause = if(userId.isNotEmpty())
+                TokenManagement.USER_ID.eq(userId)
+            else
+                TokenManagement.IDENTITY_ID.eq(identityId)
+
+            Amplify.DataStore.query(
+                TokenManagement::class,
+                Where.matches(whereClause)
+            )
+        }
+
+    override suspend fun observeTokenManagementChanged(
+        userId: String,
+        identityId: String
+    ): Flow<DataStoreItemChange<TokenManagement>> =
+        withContext(ioDispatcher) {
+            val whereClause = if(userId.isNotEmpty())
+                TokenManagement.USER_ID.eq(userId)
+            else
+                TokenManagement.IDENTITY_ID.eq(identityId)
+
+            Amplify.DataStore.observe(
+                TokenManagement::class,
+                whereClause
+            )
+        }
 
 
     override suspend fun updateChatHistoryRemote(chatHistoryRemote: ChatHistoryRemote) {

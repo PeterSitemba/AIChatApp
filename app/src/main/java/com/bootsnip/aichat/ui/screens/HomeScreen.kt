@@ -59,6 +59,7 @@ import com.bootsnip.aichat.ui.components.AstraTextSelectionActionSheet
 import com.bootsnip.aichat.ui.components.DotsLoadingIndicator
 import com.bootsnip.aichat.ui.components.HomePlaceholder
 import com.bootsnip.aichat.ui.components.NetworkConnectionDialog
+import com.bootsnip.aichat.ui.components.TechnicalErrorDialog
 import com.bootsnip.aichat.ui.components.UserChatBox
 import com.bootsnip.aichat.ui.components.UserTextSelectionActionSheet
 import com.bootsnip.aichat.util.FormatChatShare
@@ -76,14 +77,22 @@ fun HomeScreen(
     val gptChatList = viewModel.chatList.collectAsStateWithLifecycle().value
     val isLoading = viewModel.isGPTResponseLoading.collectAsStateWithLifecycle().value
     val tokenError = viewModel.tokensError.collectAsStateWithLifecycle().value
+    val suspiciousUsageError = viewModel.isDummyKeyAvailable.collectAsStateWithLifecycle().value
     val errorList = viewModel.errorChatList.collectAsStateWithLifecycle().value
 
     val listState = rememberLazyListState()
     val interactionSource = remember { MutableInteractionSource() }
+
+    var prompt by remember { mutableStateOf("") }
+
     var showSuggestionDialog by remember {
         mutableStateOf(false)
     }
     var showNoInternetDialog by remember {
+        mutableStateOf(false)
+    }
+
+    var showTechnicalErrorDialog by remember {
         mutableStateOf(false)
     }
 
@@ -128,6 +137,19 @@ fun HomeScreen(
                 showSuggestionDialog = it
             },
             onSuggestionClicked = {
+                if(suspiciousUsageError){
+                    showTechnicalErrorDialog = true
+                    return@AstraSuggestionsDialog
+                }
+
+                if (NetworkConnection(context).isNetworkAvailable()) {
+                    if (prompt.isNotEmpty()) {
+                        viewModel.getGPTResponse(prompt)
+                    }
+                    prompt = ""
+                } else {
+                    showNoInternetDialog = true
+                }
                 viewModel.getGPTResponse(it)
             }
         )
@@ -137,6 +159,14 @@ fun HomeScreen(
         NetworkConnectionDialog(
             showNoInternetDialog = {
                 showNoInternetDialog = it
+            }
+        )
+    }
+
+    if (showTechnicalErrorDialog) {
+        TechnicalErrorDialog(
+            showTechnicalErrorDialog = {
+                showTechnicalErrorDialog = it
             }
         )
     }
@@ -179,7 +209,6 @@ fun HomeScreen(
 
     ConstraintLayout(Modifier.fillMaxSize()) {
         val (chatArea, inputField, placeholder) = createRefs()
-        var prompt by remember { mutableStateOf("") }
 
         if (gptChatList.isEmpty() && errorList.isEmpty()) {
             HomePlaceholder(poweredBy = "Chat GPT", modifier = Modifier.constrainAs(placeholder) {
@@ -313,6 +342,11 @@ fun HomeScreen(
 
             ElevatedButton(
                 onClick = {
+                    if(suspiciousUsageError){
+                        showTechnicalErrorDialog = true
+                        return@ElevatedButton
+                    }
+
                     if (NetworkConnection(context).isNetworkAvailable()) {
                         if (prompt.isNotEmpty()) {
                             viewModel.getGPTResponse(prompt)

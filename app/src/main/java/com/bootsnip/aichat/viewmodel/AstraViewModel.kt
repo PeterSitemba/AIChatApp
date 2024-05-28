@@ -15,6 +15,7 @@ import com.amplifyframework.datastore.events.ModelSyncedEvent
 import com.amplifyframework.datastore.generated.model.ChatGPTLLMs
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.ChatMessageObject
+import com.amplifyframework.datastore.generated.model.TokenManagement
 import com.bootsnip.aichat.db.ChatHistory
 import com.bootsnip.aichat.db.ChatHistoryUpdate
 import com.bootsnip.aichat.db.ChatHistoryUpdateFav
@@ -129,6 +130,11 @@ class AstraViewModel @Inject constructor(
     private val _isSnackBarSuccess: MutableStateFlow<Boolean> = MutableStateFlow(false)
     val isSnackBarSuccess = _isSnackBarSuccess.asStateFlow()
 
+    private val _isDummyKeyAvailable: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    val isDummyKeyAvailable = _isDummyKeyAvailable.asStateFlow()
+
+    private val _tokenManagement: MutableStateFlow<TokenManagement?> = MutableStateFlow(null)
+    private val tokenManagement = _tokenManagement.asStateFlow()
 
     init {
         getDatastoreModelEvent()
@@ -140,6 +146,7 @@ class AstraViewModel @Inject constructor(
         getAllChatHistory()
         getLocalToken()
         resolveTokenCount()
+        //observeTokenManagement()
     }
 
     fun getGPTResponse(gptQuery: String) {
@@ -193,6 +200,11 @@ class AstraViewModel @Inject constructor(
 
                 insertOrUpdateChatHistoryDb()
                 updateLocalTokenAfterQuery()
+                saveTokenManagement(
+                    response.usage?.promptTokens,
+                    response.usage?.completionTokens,
+                    response.usage?.totalTokens
+                )
 
                 Log.d("GPT RESPONSE ID", response.id)
                 _isGPTResponseLoading.value = false
@@ -209,6 +221,7 @@ class AstraViewModel @Inject constructor(
                 .catch { Log.e("OpenAI KEY", "Error querying key", it) }
                 .collect {
                     Log.i("OpenAI KEY", "key ${it.openAi}")
+                    if (isDummyKeyAvailable.value) return@collect
                     openAiAuth.value = it.openAi
                     remoteTokensCount.value = it.tokenCount
                     updateTokensFromRemote()
@@ -242,6 +255,7 @@ class AstraViewModel @Inject constructor(
                 .collect {
                     try {
                         Log.i("OpenAI KEY", "key ${it.items}")
+                        if (isDummyKeyAvailable.value) return@collect
                         openAiAuth.value = it.items.first().openAi
                         remoteTokensCount.value = it.items.first().tokenCount
                         updateTokensFromRemote()
@@ -273,9 +287,9 @@ class AstraViewModel @Inject constructor(
     }
 
     private fun updateTokensFromRemote() {
-        if(tokensLocal.value.isNotEmpty()){
+        if (tokensLocal.value.isNotEmpty()) {
             val tokenLocal = tokensLocal.value[0]
-            if(tokensCount.value == 3) {
+            if (tokensCount.value == 3) {
                 val tokensUpdate = TokensUpdate(
                     tokenLocal.uid,
                     remoteTokensCount.value,
@@ -469,6 +483,11 @@ class AstraViewModel @Inject constructor(
         viewModelScope.launch {
             val response = repo.fetchAuthSession() as AWSCognitoAuthSession
             _isSignedIn.value = response.isSignedIn
+            identity.value = response.identityIdResult.value
+            if (!isSignedIn.value) {
+                queryTokenManagement()
+                observeTokenManagementChanges()
+            }
             fetchCurrentUser()
             fetchUserAttributes()
         }
@@ -479,6 +498,10 @@ class AstraViewModel @Inject constructor(
             try {
                 val response = repo.getCurrentUser()
                 currentUserId.value = response.userId
+                if (isSignedIn.value) {
+                    queryTokenManagement()
+                    observeTokenManagementChanges()
+                }
             } catch (e: Exception) {
                 Log.e("SignedOut", e.message.toString() + " ${currentUserId.value}")
             }
@@ -733,6 +756,107 @@ class AstraViewModel @Inject constructor(
             } catch (e: Exception) {
                 _isLoading.value = false
                 Log.e("SignedOut", e.message.toString() + " ${currentUserId.value}")
+            }
+        }
+    }
+
+    private fun queryTokenManagement() {
+        viewModelScope.launch {
+            val response =
+                repo.queryTokenManagement(currentUserId.value ?: "", identity.value ?: "")
+
+            response
+                .catch { Log.e("Queried Token Management", "Error querying tokens", it) }
+                .collect {
+                    try {
+                        _tokenManagement.value = it
+                        it.dummyKey.let { dummyKey ->
+                            if (dummyKey.isNotEmpty()) openAiAuth.value = dummyKey
+                            _isDummyKeyAvailable.value = dummyKey.isNotEmpty()
+                        }
+                    } catch (e: Exception) {
+                        Log.e("Token Management", e.message.toString())
+                    }
+                }
+        }
+    }
+
+    private fun observeTokenManagement() {
+        viewModelScope.launch {
+            val openAi =
+                repo.observeTokenManagement(currentUserId.value ?: "", identity.value ?: "")
+            openAi
+                .catch { Log.e("Token Management", "Error querying key", it) }
+                .collect {
+                    try {
+                        _tokenManagement.value = it.items.firstOrNull()
+                        Log.i("Token Management", "key ${it.items}")
+                        it.items.first().dummyKey.let { dummyKey ->
+                            if (dummyKey.isNotEmpty()) openAiAuth.value = dummyKey
+                            _isDummyKeyAvailable.value = dummyKey.isNotEmpty()
+                        }
+
+                    } catch (e: Exception) {
+                        Log.e("Token Management", e.message.toString())
+                    }
+                }
+        }
+
+    }
+
+    private fun observeTokenManagementChanges() {
+        viewModelScope.launch {
+            val openAi =
+                repo.observeTokenManagementChanged(currentUserId.value ?: "", identity.value ?: "")
+            openAi
+                .catch { Log.e("Token Management", "Error querying key", it) }
+                .collect {
+                    try {
+                        _tokenManagement.value = it.item()
+                        Log.i("Token Management", "key ${it.item()}")
+                        it.item().dummyKey.let { dummyKey ->
+                            if (dummyKey.isNotEmpty()) openAiAuth.value = dummyKey
+                            _isDummyKeyAvailable.value = dummyKey.isNotEmpty()
+                        }
+
+                    } catch (e: Exception) {
+                        Log.e("Token Management", e.message.toString())
+                    }
+                }
+        }
+
+    }
+
+    private fun saveTokenManagement(
+        promptTokens: Int?,
+        completionTokens: Int?,
+        totalTokens: Int?
+    ) {
+        viewModelScope.launch {
+            val remoteTokenIdentityId = tokenManagement.value?.identityId ?: ""
+            val remoteTokenUserId = tokenManagement.value?.userId ?: ""
+
+            val currentTokenPrompt = tokenManagement.value?.promptTokens ?: 0
+            val currentTokenCompletion = tokenManagement.value?.completionTokens ?: 0
+            val currentTokenTotal = tokenManagement.value?.totalTokens ?: 0
+
+            val newPromptCount = currentTokenPrompt.plus((promptTokens ?: 0))
+            val newCompletionCount = currentTokenCompletion.plus((completionTokens ?: 0))
+            val newTotalCount = currentTokenTotal.plus((totalTokens ?: 0))
+
+            val tokenManagementData = TokenManagement.builder()
+                .identityId(identity.value ?: "")
+                .unlimited(tokensLocal.value.firstOrNull()?.unlimited ?: false)
+                .promptTokens(newPromptCount)
+                .completionTokens(newCompletionCount)
+                .totalTokens(newTotalCount)
+                .userId(currentUserId.value ?: "")
+                .build()
+
+            if (remoteTokenUserId.isNotEmpty() || remoteTokenIdentityId.isNotEmpty()) {
+                repo.updateTokenManagement(tokenManagementData)
+            } else {
+                repo.saveTokenManagement(tokenManagementData)
             }
         }
     }
