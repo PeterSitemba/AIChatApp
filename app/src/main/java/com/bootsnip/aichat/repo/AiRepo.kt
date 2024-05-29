@@ -19,6 +19,7 @@ import com.amplifyframework.datastore.DataStoreQuerySnapshot
 import com.amplifyframework.datastore.generated.model.ChatGPTLLMs
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.OpenAi
+import com.amplifyframework.datastore.generated.model.Suggestions
 import com.amplifyframework.datastore.generated.model.TokenManagement
 import com.amplifyframework.hub.HubChannel
 import com.amplifyframework.hub.HubEvent
@@ -288,6 +289,16 @@ class AiRepo @Inject constructor(
             )
         }
 
+    override suspend fun querySuggestions(): Flow<Suggestions> =
+        withContext(ioDispatcher) {
+            Amplify.DataStore.query(Suggestions::class)
+        }
+
+
+    override suspend fun observeSuggestions(): Flow<DataStoreItemChange<Suggestions>> =
+        withContext(ioDispatcher) {
+            Amplify.DataStore.observe(Suggestions::class,)
+        }
 
     override suspend fun updateChatHistoryRemote(chatHistoryRemote: ChatHistoryRemote) {
         Amplify.DataStore.query(

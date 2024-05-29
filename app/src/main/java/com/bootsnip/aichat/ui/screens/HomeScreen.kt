@@ -54,7 +54,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.aallam.openai.api.core.Role
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.components.AiChatBox
-import com.bootsnip.aichat.ui.components.AstraSuggestionsDialog
+import com.bootsnip.aichat.ui.components.SuggestionsDialog
 import com.bootsnip.aichat.ui.components.AstraTextSelectionActionSheet
 import com.bootsnip.aichat.ui.components.DotsLoadingIndicator
 import com.bootsnip.aichat.ui.components.HomePlaceholder
@@ -79,6 +79,7 @@ fun HomeScreen(
     val tokenError = viewModel.tokensError.collectAsStateWithLifecycle().value
     val suspiciousUsageError = viewModel.isDummyKeyAvailable.collectAsStateWithLifecycle().value
     val errorList = viewModel.errorChatList.collectAsStateWithLifecycle().value
+    val suggestions = viewModel.suggestions.collectAsStateWithLifecycle().value
 
     val listState = rememberLazyListState()
     val interactionSource = remember { MutableInteractionSource() }
@@ -132,14 +133,14 @@ fun HomeScreen(
     }
 
     if (showSuggestionDialog) {
-        AstraSuggestionsDialog(
+        SuggestionsDialog(
             showSuggestionDialog = {
                 showSuggestionDialog = it
             },
             onSuggestionClicked = {
                 if(suspiciousUsageError){
                     showTechnicalErrorDialog = true
-                    return@AstraSuggestionsDialog
+                    return@SuggestionsDialog
                 }
 
                 if (NetworkConnection(context).isNetworkAvailable()) {
@@ -151,7 +152,8 @@ fun HomeScreen(
                     showNoInternetDialog = true
                 }
                 viewModel.getGPTResponse(it)
-            }
+            },
+            suggestions = suggestions
         )
     }
 

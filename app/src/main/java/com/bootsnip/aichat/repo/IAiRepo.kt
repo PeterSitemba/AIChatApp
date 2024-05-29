@@ -11,6 +11,7 @@ import com.amplifyframework.datastore.DataStoreQuerySnapshot
 import com.amplifyframework.datastore.generated.model.ChatGPTLLMs
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.OpenAi
+import com.amplifyframework.datastore.generated.model.Suggestions
 import com.amplifyframework.datastore.generated.model.TokenManagement
 import com.amplifyframework.hub.HubEvent
 import com.bootsnip.aichat.db.ChatHistory
@@ -86,4 +87,8 @@ interface IAiRepo {
     suspend fun queryTokenManagement(userId: String, identityId: String): Flow<TokenManagement>
 
     suspend fun observeTokenManagementChanged(userId: String, identityId: String): Flow<DataStoreItemChange<TokenManagement>>
+
+    suspend fun querySuggestions(): Flow<Suggestions>
+
+    suspend fun observeSuggestions(): Flow<DataStoreItemChange<Suggestions>>
 }

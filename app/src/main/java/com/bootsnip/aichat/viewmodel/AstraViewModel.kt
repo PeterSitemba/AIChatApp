@@ -136,6 +136,9 @@ class AstraViewModel @Inject constructor(
     private val _tokenManagement: MutableStateFlow<TokenManagement?> = MutableStateFlow(null)
     private val tokenManagement = _tokenManagement.asStateFlow()
 
+    private val _suggestions: MutableStateFlow<MutableList<String>> = MutableStateFlow(mutableListOf())
+    val suggestions = _suggestions.asStateFlow()
+
     init {
         getDatastoreModelEvent()
         observeOpenAI()
@@ -146,7 +149,8 @@ class AstraViewModel @Inject constructor(
         getAllChatHistory()
         getLocalToken()
         resolveTokenCount()
-        //observeTokenManagement()
+        querySuggestions()
+        observeSuggestionChanges()
     }
 
     fun getGPTResponse(gptQuery: String) {
@@ -859,6 +863,45 @@ class AstraViewModel @Inject constructor(
                 repo.saveTokenManagement(tokenManagementData)
             }
         }
+    }
+
+    private fun querySuggestions() {
+        viewModelScope.launch {
+            val list = mutableListOf<String>()
+            val response = repo.querySuggestions()
+
+            response
+                .catch { Log.e("Queried Suggestions", "Error querying suggestions", it) }
+                .collect {
+                    try {
+                        list.add(it.suggestion)
+                    } catch (e: Exception) {
+                        Log.e("Queried Suggestions", e.message.toString())
+                    }
+                }
+            _suggestions.value.clear()
+            _suggestions.value = list
+        }
+    }
+
+    private fun observeSuggestionChanges() {
+        viewModelScope.launch {
+            val list = mutableListOf<String>()
+            val response = repo.observeSuggestions()
+
+            response
+                .catch { Log.e("Queried Suggestions", "Error querying suggestions", it) }
+                .collect {
+                    try {
+                        list.add(it.item().suggestion)
+                    } catch (e: Exception) {
+                        Log.e("Token Management", e.message.toString())
+                    }
+                }
+            _suggestions.value.clear()
+            _suggestions.value = list
+        }
+
     }
 
     fun showSignInSuccessSnackBar(showSuccess: Boolean) {
