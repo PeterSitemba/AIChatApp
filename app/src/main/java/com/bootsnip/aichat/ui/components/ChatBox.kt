@@ -1,6 +1,7 @@
 package com.bootsnip.aichat.ui.components
 
 import android.graphics.drawable.BitmapDrawable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -78,18 +79,7 @@ fun AiChatBox(
         mutableStateOf(false)
     }
 
-    if (showErrorPlaceHolder) {
-        Surface(
-            modifier = Modifier
-                .size(250.dp)
-                .clip(RoundedCornerShape(20.dp))
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(text = "Error loading image...", textAlign = TextAlign.Center)
-            }
 
-        }
-    }
 
     Row(modifier.fillMaxWidth()) {
         AiAvatar()
@@ -98,64 +88,79 @@ fun AiChatBox(
             Text(text = stringResource(id = R.string.app_name))
             if (isImagePrompt) {
                 Box {
-                    SubcomposeAsyncImage(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp, bottom = 6.dp, end = 8.dp)
-                            .wrapContentHeight()
-                            .clip(RoundedCornerShape(20.dp)),
-                        model = response,
-                        loading = {
-                            DotsLoadingIndicator()
-                            imageLoadingIndicator = true
-                            showErrorPlaceHolder = false
-                        },
-                        onSuccess = {
-                            imageLoadingIndicator = false
-                            showErrorPlaceHolder = false
-                        },
-                        onError = {
-                            showErrorPlaceHolder = true
-                            imageLoadingIndicator = false
-                        },
-                        contentDescription = null,
-                    )
-                    if (!imageLoadingIndicator) {
-                        IconButton(
-                            onClick = {
-                                sharingLoadingIndicator = true
-                                coroutineScope.launch {
-                                    val loader = ImageLoader(context)
-                                    val request = ImageRequest.Builder(context)
-                                        .data(response)
-                                        .allowHardware(false)
-                                        .build()
-                                    val result = (loader.execute(request) as SuccessResult).drawable
-                                    val bitmap = (result as BitmapDrawable).bitmap
-                                    bitmap.shareImage(context) {
-                                        sharingLoadingIndicator = it
-                                    }
-                                }
-                            },
+                    if (showErrorPlaceHolder) {
+                        Surface(
                             modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(bottom = 20.dp, end = 12.dp),
-                            colors = iconButtonColors
+                                .padding(top = 12.dp, bottom = 6.dp, end = 8.dp)
+                                .size(250.dp)
+                                .clip(RoundedCornerShape(20.dp))
                         ) {
-                            if (sharingLoadingIndicator)
-                                CircularProgressIndicator(
-                                    modifier = Modifier.padding(4.dp)
-                                )
-                            else
-                                Icon(
-                                    painterResource(id = R.drawable.arrow_down),
-                                    contentDescription = ""
-                                )
-                        }
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.background(Color.Gray)) {
+                                Text(text = "Error loading image...", textAlign = TextAlign.Center)
+                            }
 
+                        }
+                    } else {
+                        SubcomposeAsyncImage(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 12.dp, bottom = 6.dp, end = 8.dp)
+                                .wrapContentHeight()
+                                .clip(RoundedCornerShape(20.dp)),
+                            model = response,
+                            loading = {
+                                DotsLoadingIndicator()
+                                imageLoadingIndicator = true
+                                showErrorPlaceHolder = false
+                            },
+                            onSuccess = {
+                                imageLoadingIndicator = false
+                                showErrorPlaceHolder = false
+                            },
+                            onError = {
+                                showErrorPlaceHolder = true
+                                imageLoadingIndicator = false
+                            },
+                            contentDescription = null,
+                        )
+
+                        if (!imageLoadingIndicator) {
+                            IconButton(
+                                onClick = {
+                                    sharingLoadingIndicator = true
+                                    coroutineScope.launch {
+                                        val loader = ImageLoader(context)
+                                        val request = ImageRequest.Builder(context)
+                                            .data(response)
+                                            .allowHardware(false)
+                                            .build()
+                                        val result = (loader.execute(request) as SuccessResult).drawable
+                                        val bitmap = (result as BitmapDrawable).bitmap
+                                        bitmap.shareImage(context) {
+                                            sharingLoadingIndicator = it
+                                        }
+                                    }
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(bottom = 20.dp, end = 12.dp),
+                                colors = iconButtonColors
+                            ) {
+                                if (sharingLoadingIndicator)
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.padding(4.dp)
+                                    )
+                                else
+                                    Icon(
+                                        painterResource(id = R.drawable.arrow_down),
+                                        contentDescription = ""
+                                    )
+                            }
+
+                        }
                     }
                 }
-                if (!imageLoadingIndicator && variationButtonVisible) {
+                if (!imageLoadingIndicator && variationButtonVisible && !showErrorPlaceHolder) {
                     OutlinedButton(
                         onClick = onCreateVariationClicked,
                         contentPadding = PaddingValues(
