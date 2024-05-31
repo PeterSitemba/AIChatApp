@@ -298,33 +298,37 @@ class AstraViewModel @Inject constructor(
                 delay(1000)
                 checkOpenAiSyncAndGetImageUrl(gptQuery)
             } else {
-
-                val imageCreation = ImageCreation(
-                    prompt = gptQuery,
-                    model = ModelId(selectedGPTLLM.value?.llmVersion ?: "dall-e-2"),
-                    n = 1,
-                    size = ImageSize.is1024x1024
-                )
-
-                val response = repo.gptImageCreation(
-                    imageCreation,
-                    openAiAuth.value
-                )
-
-                val url = response.firstOrNull()?.url
-
-                val newResponseList = chatList.value.toMutableList()
-                chatList.value = newResponseList.apply {
-                    this.add(
-                        AstraChatMessage(
-                            role = ChatRole.Assistant,
-                            content = url,
-                            isImagePrompt = true
-                        )
+                try {
+                    val imageCreation = ImageCreation(
+                        prompt = gptQuery,
+                        model = ModelId(selectedGPTLLM.value?.llmVersion ?: "dall-e-2"),
+                        n = 1,
+                        size = ImageSize.is1024x1024
                     )
+
+                    val response = repo.gptImageCreation(
+                        imageCreation,
+                        openAiAuth.value
+                    )
+
+                    val url = response.firstOrNull()?.url
+
+                    val newResponseList = chatList.value.toMutableList()
+                    chatList.value = newResponseList.apply {
+                        this.add(
+                            AstraChatMessage(
+                                role = ChatRole.Assistant,
+                                content = url,
+                                isImagePrompt = true
+                            )
+                        )
+                    }
+
+                    insertOrUpdateChatHistoryDb()
+                } catch (e: Exception) {
+                    Log.e("Error", e.message.toString())
                 }
 
-                insertOrUpdateChatHistoryDb()
                 _isGPTResponseLoading.value = false
             }
         }
