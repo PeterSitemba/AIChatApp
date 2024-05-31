@@ -33,6 +33,7 @@ fun ChatHistoryListItem(
     astraPlaceHolder: String,
     id: Int,
     isFav: Boolean = false,
+    isImagePrompt: Boolean = false,
     viewModel: AstraViewModel = hiltViewModel()
 ) {
 
@@ -76,13 +77,14 @@ fun ChatHistoryListItem(
                 fontSize = 16.sp
             )
 
-            Text(
-                text = astraPlaceHolder,
-                overflow = TextOverflow.Ellipsis,
-                maxLines = 1,
-                fontSize = 12.sp
-            )
-
+            if(!isImagePrompt){
+                Text(
+                    text = astraPlaceHolder,
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1,
+                    fontSize = 12.sp
+                )
+            }
         }
 
 

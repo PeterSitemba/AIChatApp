@@ -123,4 +123,7 @@ dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     implementation (libs.authenticator)
+
+    //coil
+    implementation(libs.coil)
 }

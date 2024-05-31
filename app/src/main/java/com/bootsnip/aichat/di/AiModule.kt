@@ -3,8 +3,8 @@ package com.bootsnip.aichat.di
 import android.content.Context
 import androidx.room.Room
 import com.bootsnip.aichat.db.AstraRoomDatabase
-import com.bootsnip.aichat.repo.AiRepo
-import com.bootsnip.aichat.repo.IAiRepo
+import com.bootsnip.aichat.repo.AstraRepo
+import com.bootsnip.aichat.repo.IAstraRepo
 import com.bootsnip.aichat.service.ApiService
 import com.bootsnip.aichat.service.IApiService
 import com.bootsnip.aichat.service.httpClientAndroid
@@ -27,7 +27,7 @@ interface AiModule {
     fun bindIApiService(apiService: ApiService): IApiService
 
     @Binds
-    fun bindIAiRepo(aiRepo: AiRepo): IAiRepo
+    fun bindIAiRepo(aiRepo: AstraRepo): IAstraRepo
 
     companion object {
         @Provides

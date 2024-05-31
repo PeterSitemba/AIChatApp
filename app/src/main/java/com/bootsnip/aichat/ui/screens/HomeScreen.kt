@@ -65,6 +65,7 @@ import com.bootsnip.aichat.ui.components.UserTextSelectionActionSheet
 import com.bootsnip.aichat.util.FormatChatShare
 import com.bootsnip.aichat.util.NetworkConnection
 import com.bootsnip.aichat.viewmodel.AstraViewModel
+import okhttp3.internal.toImmutableList
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -80,6 +81,7 @@ fun HomeScreen(
     val suspiciousUsageError = viewModel.isDummyKeyAvailable.collectAsStateWithLifecycle().value
     val errorList = viewModel.errorChatList.collectAsStateWithLifecycle().value
     val suggestions = viewModel.suggestions.collectAsStateWithLifecycle().value
+    val isImagePrompt = viewModel.isImagePrompt.collectAsStateWithLifecycle().value
 
     val listState = rememberLazyListState()
     val interactionSource = remember { MutableInteractionSource() }
@@ -133,27 +135,31 @@ fun HomeScreen(
     }
 
     if (showSuggestionDialog) {
+        val suggestionsToDisplay =
+            if (isImagePrompt)
+                suggestions.filter { it.isImgSuggestion }
+            else
+                suggestions.filter { !it.isImgSuggestion }
+
         SuggestionsDialog(
             showSuggestionDialog = {
                 showSuggestionDialog = it
             },
             onSuggestionClicked = {
-                if(suspiciousUsageError){
+                if (suspiciousUsageError) {
                     showTechnicalErrorDialog = true
                     return@SuggestionsDialog
                 }
-
                 if (NetworkConnection(context).isNetworkAvailable()) {
-                    if (prompt.isNotEmpty()) {
-                        viewModel.getGPTResponse(prompt)
-                    }
-                    prompt = ""
+                    if (isImagePrompt)
+                        viewModel.getImageUrlResponse(it)
+                    else
+                        viewModel.getGPTResponse(it)
                 } else {
                     showNoInternetDialog = true
                 }
-                viewModel.getGPTResponse(it)
             },
-            suggestions = suggestions
+            suggestions = suggestionsToDisplay.map { it.suggestion }.toImmutableList()
         )
     }
 
@@ -254,14 +260,17 @@ fun HomeScreen(
                         Role("assistant") -> {
                             AiChatBox(
                                 item.content.orEmpty(),
+                                item.isImagePrompt,
                                 modifier = Modifier
                                     .combinedClickable(
                                         onClick = { },
                                         onLongClick = {
-                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            showAstraModalBottomSheet = true
-                                            selectedResponse = item.content.orEmpty()
-                                            chatItemIndex = index
+                                            if (!item.isImagePrompt) {
+                                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                showAstraModalBottomSheet = true
+                                                selectedResponse = item.content.orEmpty()
+                                                chatItemIndex = index
+                                            }
                                         },
                                         onLongClickLabel = stringResource(R.string.new_chat)
                                     )
@@ -344,14 +353,17 @@ fun HomeScreen(
 
             ElevatedButton(
                 onClick = {
-                    if(suspiciousUsageError){
+                    if (suspiciousUsageError) {
                         showTechnicalErrorDialog = true
                         return@ElevatedButton
                     }
 
                     if (NetworkConnection(context).isNetworkAvailable()) {
                         if (prompt.isNotEmpty()) {
-                            viewModel.getGPTResponse(prompt)
+                            if (isImagePrompt)
+                                viewModel.getImageUrlResponse(prompt)
+                            else
+                                viewModel.getGPTResponse(prompt)
                         }
                         prompt = ""
                     } else {

@@ -4,6 +4,8 @@ import android.util.Log
 import com.aallam.openai.api.chat.ChatCompletion
 import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.chat.ChatRole
+import com.aallam.openai.api.image.ImageCreation
+import com.aallam.openai.api.image.ImageURL
 import com.aallam.openai.client.OpenAI
 import com.amplifyframework.auth.AuthSession
 import com.amplifyframework.auth.AuthUser
@@ -43,12 +45,12 @@ import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
 
-class AiRepo @Inject constructor(
+class AstraRepo @Inject constructor(
     private val service: IApiService,
     private val ioDispatcher: CoroutineDispatcher,
     private val chatHistoryDao: ChatHistoryDao,
     private val tokensDao: TokensDao
-) : IAiRepo {
+) : IAstraRepo {
 
     override suspend fun gtpChatResponse(
         query: List<ChatMessage>,
@@ -65,12 +67,20 @@ class AiRepo @Inject constructor(
                 )
             )
             completeQuery.addAll(query)
-            OpenAI(openAiAuth).chatCompletion(
+            OpenAI(token = openAiAuth).chatCompletion(
                 service.getGPTResponse(
                     completeQuery.toList(),
                     modelId
                 )
             )
+        }
+
+    override suspend fun gptImageCreation(
+        imageCreation: ImageCreation,
+        openAiAuth: String
+    ): List<ImageURL> =
+        withContext(ioDispatcher) {
+            OpenAI(token = openAiAuth).imageURL(imageCreation)
         }
 
     //region room db functions
@@ -186,7 +196,6 @@ class AiRepo @Inject constructor(
         withContext(ioDispatcher) {
             try {
                 Amplify.DataStore.save(chatHistoryRemote)
-                Log.i("Chat History", "Saved a chat history.")
             } catch (error: DataStoreException) {
                 Log.e("Chat History", "Save failed.", error)
             }
@@ -214,7 +223,6 @@ class AiRepo @Inject constructor(
         withContext(ioDispatcher) {
             try {
                 Amplify.DataStore.save(tokenManagement)
-                Log.i("Token Management", "Saved token management.")
             } catch (error: DataStoreException) {
                 Log.e("Token Management", "Save failed.", error)
             }
@@ -222,7 +230,7 @@ class AiRepo @Inject constructor(
     }
 
     override suspend fun updateTokenManagement(tokenManagement: TokenManagement) {
-        val whereClause = if(tokenManagement.userId.isNotEmpty())
+        val whereClause = if (tokenManagement.userId.isNotEmpty())
             TokenManagement.USER_ID.eq(tokenManagement.userId)
         else
             TokenManagement.IDENTITY_ID.eq(tokenManagement.identityId)
@@ -247,9 +255,12 @@ class AiRepo @Inject constructor(
             .collect { Log.i("Token Management", "Updated a post") }
     }
 
-    override suspend fun observeTokenManagement(userId: String, identityId: String): Flow<DataStoreQuerySnapshot<TokenManagement>> =
+    override suspend fun observeTokenManagement(
+        userId: String,
+        identityId: String
+    ): Flow<DataStoreQuerySnapshot<TokenManagement>> =
         withContext(ioDispatcher) {
-            val whereClause = if(userId.isNotEmpty())
+            val whereClause = if (userId.isNotEmpty())
                 TokenManagement.USER_ID.eq(userId)
             else
                 TokenManagement.IDENTITY_ID.eq(identityId)
@@ -260,9 +271,12 @@ class AiRepo @Inject constructor(
             )
         }
 
-    override suspend fun queryTokenManagement(userId: String, identityId: String): Flow<TokenManagement> =
+    override suspend fun queryTokenManagement(
+        userId: String,
+        identityId: String
+    ): Flow<TokenManagement> =
         withContext(ioDispatcher) {
-            val whereClause = if(userId.isNotEmpty())
+            val whereClause = if (userId.isNotEmpty())
                 TokenManagement.USER_ID.eq(userId)
             else
                 TokenManagement.IDENTITY_ID.eq(identityId)
@@ -278,7 +292,7 @@ class AiRepo @Inject constructor(
         identityId: String
     ): Flow<DataStoreItemChange<TokenManagement>> =
         withContext(ioDispatcher) {
-            val whereClause = if(userId.isNotEmpty())
+            val whereClause = if (userId.isNotEmpty())
                 TokenManagement.USER_ID.eq(userId)
             else
                 TokenManagement.IDENTITY_ID.eq(identityId)
@@ -297,7 +311,7 @@ class AiRepo @Inject constructor(
 
     override suspend fun observeSuggestions(): Flow<DataStoreItemChange<Suggestions>> =
         withContext(ioDispatcher) {
-            Amplify.DataStore.observe(Suggestions::class,)
+            Amplify.DataStore.observe(Suggestions::class)
         }
 
     override suspend fun updateChatHistoryRemote(chatHistoryRemote: ChatHistoryRemote) {

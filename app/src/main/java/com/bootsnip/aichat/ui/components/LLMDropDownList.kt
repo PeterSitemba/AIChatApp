@@ -30,9 +30,9 @@ fun GPTDropDownList(
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = { showDropDown(false) },
-        offset = DpOffset((-12).dp, 0.dp)
+        offset = if(unlimited) DpOffset((-20).dp, 0.dp) else DpOffset((-34).dp, 0.dp)
     ) {
-        llmList.sortedBy { it.llmVersion }.forEach {
+        llmList.sortedBy { it.sortOrder }.forEach {
             DropdownMenuItem(
                 text = {
                     Row(
@@ -58,8 +58,8 @@ fun GPTDropDownList(
                 contentPadding = PaddingValues(
                     top = 0.dp,
                     bottom = 0.dp,
-                    start = 0.dp,
-                    end = 0.dp
+                    start = 8.dp,
+                    end = 8.dp
                 ),
                 modifier = Modifier.padding(horizontal = 8.dp)
             )

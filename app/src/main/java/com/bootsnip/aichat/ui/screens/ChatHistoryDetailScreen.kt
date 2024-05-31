@@ -136,17 +136,19 @@ fun ChatHistoryDetailScreen(
                         Role("assistant") -> {
                             AiChatBox(
                                 it.content.orEmpty(),
+                                it.isImagePrompt,
                                 modifier = Modifier.combinedClickable(
                                     onClick = { },
                                     onLongClick = {
-                                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        showAstraModalBottomSheet = true
-                                        selectedResponse = it.content.orEmpty()
+                                        if(!it.isImagePrompt){
+                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            showAstraModalBottomSheet = true
+                                            selectedResponse = it.content.orEmpty()
+                                        }
                                     },
                                     onLongClickLabel = stringResource(R.string.new_chat)
                                 )
                             )
-
                         }
 
                         else -> {}
@@ -165,25 +167,26 @@ fun ChatHistoryDetailScreen(
                 .padding(16.dp)
         ) {
 
-            ElevatedButton(
-                onClick = {
-                    uid?.let {
-                        navigateHome(it)
-                    }
-                },
-                modifier = Modifier.align(Alignment.Center),
-                colors = ButtonColors(
-                    containerColor = Purple40,
-                    contentColor = Color.White,
-                    disabledContainerColor = Color.Unspecified,
-                    disabledContentColor = Color.Unspecified
-                )
-            ) {
-                Text(
-                    text = "Continue Chat", Modifier.padding(5.dp),
-                    fontSize = 16.sp
-                )
-            }
+            if (chatHistory?.chatMessageList?.firstOrNull()?.isImagePrompt == false)
+                ElevatedButton(
+                    onClick = {
+                        uid?.let {
+                            navigateHome(it)
+                        }
+                    },
+                    modifier = Modifier.align(Alignment.Center),
+                    colors = ButtonColors(
+                        containerColor = Purple40,
+                        contentColor = Color.White,
+                        disabledContainerColor = Color.Unspecified,
+                        disabledContentColor = Color.Unspecified
+                    )
+                ) {
+                    Text(
+                        text = "Continue Chat", Modifier.padding(5.dp),
+                        fontSize = 16.sp
+                    )
+                }
 
         }
     }

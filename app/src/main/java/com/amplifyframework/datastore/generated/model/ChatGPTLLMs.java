@@ -30,10 +30,12 @@ public final class ChatGPTLLMs implements Model {
   public static final QueryField LLM_VERSION = field("ChatGPTLLMs", "llm_version");
   public static final QueryField SUBSCRIBED = field("ChatGPTLLMs", "subscribed");
   public static final QueryField DISPLAY_NAME = field("ChatGPTLLMs", "display_name");
+  public static final QueryField SORT_ORDER = field("ChatGPTLLMs", "sort_order");
   private final @ModelField(targetType="ID", isRequired = true) String id;
   private final @ModelField(targetType="String", isRequired = true) String llm_version;
   private final @ModelField(targetType="Boolean", isRequired = true) Boolean subscribed;
   private final @ModelField(targetType="String") String display_name;
+  private final @ModelField(targetType="Int") Integer sort_order;
   private @ModelField(targetType="AWSDateTime", isReadOnly = true) Temporal.DateTime createdAt;
   private @ModelField(targetType="AWSDateTime", isReadOnly = true) Temporal.DateTime updatedAt;
   /** @deprecated This API is internal to Amplify and should not be used. */
@@ -58,6 +60,10 @@ public final class ChatGPTLLMs implements Model {
       return display_name;
   }
   
+  public Integer getSortOrder() {
+      return sort_order;
+  }
+  
   public Temporal.DateTime getCreatedAt() {
       return createdAt;
   }
@@ -66,11 +72,12 @@ public final class ChatGPTLLMs implements Model {
       return updatedAt;
   }
   
-  private ChatGPTLLMs(String id, String llm_version, Boolean subscribed, String display_name) {
+  private ChatGPTLLMs(String id, String llm_version, Boolean subscribed, String display_name, Integer sort_order) {
     this.id = id;
     this.llm_version = llm_version;
     this.subscribed = subscribed;
     this.display_name = display_name;
+    this.sort_order = sort_order;
   }
   
   @Override
@@ -85,6 +92,7 @@ public final class ChatGPTLLMs implements Model {
               ObjectsCompat.equals(getLlmVersion(), chatGptllMs.getLlmVersion()) &&
               ObjectsCompat.equals(getSubscribed(), chatGptllMs.getSubscribed()) &&
               ObjectsCompat.equals(getDisplayName(), chatGptllMs.getDisplayName()) &&
+              ObjectsCompat.equals(getSortOrder(), chatGptllMs.getSortOrder()) &&
               ObjectsCompat.equals(getCreatedAt(), chatGptllMs.getCreatedAt()) &&
               ObjectsCompat.equals(getUpdatedAt(), chatGptllMs.getUpdatedAt());
       }
@@ -97,6 +105,7 @@ public final class ChatGPTLLMs implements Model {
       .append(getLlmVersion())
       .append(getSubscribed())
       .append(getDisplayName())
+      .append(getSortOrder())
       .append(getCreatedAt())
       .append(getUpdatedAt())
       .toString()
@@ -111,6 +120,7 @@ public final class ChatGPTLLMs implements Model {
       .append("llm_version=" + String.valueOf(getLlmVersion()) + ", ")
       .append("subscribed=" + String.valueOf(getSubscribed()) + ", ")
       .append("display_name=" + String.valueOf(getDisplayName()) + ", ")
+      .append("sort_order=" + String.valueOf(getSortOrder()) + ", ")
       .append("createdAt=" + String.valueOf(getCreatedAt()) + ", ")
       .append("updatedAt=" + String.valueOf(getUpdatedAt()))
       .append("}")
@@ -134,6 +144,7 @@ public final class ChatGPTLLMs implements Model {
       id,
       null,
       null,
+      null,
       null
     );
   }
@@ -142,7 +153,8 @@ public final class ChatGPTLLMs implements Model {
     return new CopyOfBuilder(id,
       llm_version,
       subscribed,
-      display_name);
+      display_name,
+      sort_order);
   }
   public interface LlmVersionStep {
     SubscribedStep llmVersion(String llmVersion);
@@ -158,6 +170,7 @@ public final class ChatGPTLLMs implements Model {
     ChatGPTLLMs build();
     BuildStep id(String id);
     BuildStep displayName(String displayName);
+    BuildStep sortOrder(Integer sortOrder);
   }
   
 
@@ -166,15 +179,17 @@ public final class ChatGPTLLMs implements Model {
     private String llm_version;
     private Boolean subscribed;
     private String display_name;
+    private Integer sort_order;
     public Builder() {
       
     }
     
-    private Builder(String id, String llm_version, Boolean subscribed, String display_name) {
+    private Builder(String id, String llm_version, Boolean subscribed, String display_name, Integer sort_order) {
       this.id = id;
       this.llm_version = llm_version;
       this.subscribed = subscribed;
       this.display_name = display_name;
+      this.sort_order = sort_order;
     }
     
     @Override
@@ -185,7 +200,8 @@ public final class ChatGPTLLMs implements Model {
           id,
           llm_version,
           subscribed,
-          display_name);
+          display_name,
+          sort_order);
     }
     
     @Override
@@ -208,6 +224,12 @@ public final class ChatGPTLLMs implements Model {
         return this;
     }
     
+    @Override
+     public BuildStep sortOrder(Integer sortOrder) {
+        this.sort_order = sortOrder;
+        return this;
+    }
+    
     /**
      * @param id id
      * @return Current Builder instance, for fluent method chaining
@@ -220,8 +242,8 @@ public final class ChatGPTLLMs implements Model {
   
 
   public final class CopyOfBuilder extends Builder {
-    private CopyOfBuilder(String id, String llmVersion, Boolean subscribed, String displayName) {
-      super(id, llm_version, subscribed, display_name);
+    private CopyOfBuilder(String id, String llmVersion, Boolean subscribed, String displayName, Integer sortOrder) {
+      super(id, llm_version, subscribed, display_name, sort_order);
       Objects.requireNonNull(llm_version);
       Objects.requireNonNull(subscribed);
     }
@@ -239,6 +261,11 @@ public final class ChatGPTLLMs implements Model {
     @Override
      public CopyOfBuilder displayName(String displayName) {
       return (CopyOfBuilder) super.displayName(displayName);
+    }
+    
+    @Override
+     public CopyOfBuilder sortOrder(Integer sortOrder) {
+      return (CopyOfBuilder) super.sortOrder(sortOrder);
     }
   }
   

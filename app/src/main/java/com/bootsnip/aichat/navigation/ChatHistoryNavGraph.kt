@@ -36,7 +36,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.aallam.openai.api.chat.ChatMessage
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.screens.ChatHistoryDetailScreen
 import com.bootsnip.aichat.ui.screens.ChatHistoryScreen
@@ -107,26 +106,23 @@ fun ChatHistoryNavGraph(
                 },
                 actions = {
                     if (currentRoute == AllDestinations.CHAT_HISTORY_DETAIL) {
-                        IconButton(onClick = {
-                            try {
-                                val gptList = chatHistory?.chatMessageList?.map {
-                                    ChatMessage(
-                                        it.role,
-                                        it.content
-                                    )
+                        val gptList = chatHistory?.chatMessageList
+                        if(gptList?.firstOrNull()?.isImagePrompt == false) {
+                            IconButton(onClick = {
+                                try {
+                                    gptList.let {
+                                        clipboardManager.setText(AnnotatedString((FormatChatShare(it).chatToShare())))
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("Error", e.message.toString())
                                 }
-                                gptList?.let {
-                                    clipboardManager.setText(AnnotatedString((FormatChatShare(it).chatToShare())))
-                                }
-                            } catch (e: Exception) {
-                                Log.e("Error", e.message.toString())
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Share,
+                                    contentDescription = "Localized description",
+                                    tint = MaterialTheme.colorScheme.secondary
+                                )
                             }
-                        }) {
-                            Icon(
-                                imageVector = Icons.Filled.Share,
-                                contentDescription = "Localized description",
-                                tint = MaterialTheme.colorScheme.secondary
-                            )
                         }
                     }
                 },

@@ -28,8 +28,10 @@ import static com.amplifyframework.core.model.query.predicate.QueryField.field;
 public final class Suggestions implements Model {
   public static final QueryField ID = field("Suggestions", "id");
   public static final QueryField SUGGESTION = field("Suggestions", "suggestion");
+  public static final QueryField IS_IMG_SUGGESTION = field("Suggestions", "is_img_suggestion");
   private final @ModelField(targetType="ID", isRequired = true) String id;
   private final @ModelField(targetType="String") String suggestion;
+  private final @ModelField(targetType="Boolean") Boolean is_img_suggestion;
   private @ModelField(targetType="AWSDateTime", isReadOnly = true) Temporal.DateTime createdAt;
   private @ModelField(targetType="AWSDateTime", isReadOnly = true) Temporal.DateTime updatedAt;
   /** @deprecated This API is internal to Amplify and should not be used. */
@@ -46,6 +48,10 @@ public final class Suggestions implements Model {
       return suggestion;
   }
   
+  public Boolean getIsImgSuggestion() {
+      return is_img_suggestion;
+  }
+  
   public Temporal.DateTime getCreatedAt() {
       return createdAt;
   }
@@ -54,9 +60,10 @@ public final class Suggestions implements Model {
       return updatedAt;
   }
   
-  private Suggestions(String id, String suggestion) {
+  private Suggestions(String id, String suggestion, Boolean is_img_suggestion) {
     this.id = id;
     this.suggestion = suggestion;
+    this.is_img_suggestion = is_img_suggestion;
   }
   
   @Override
@@ -69,6 +76,7 @@ public final class Suggestions implements Model {
       Suggestions suggestions = (Suggestions) obj;
       return ObjectsCompat.equals(getId(), suggestions.getId()) &&
               ObjectsCompat.equals(getSuggestion(), suggestions.getSuggestion()) &&
+              ObjectsCompat.equals(getIsImgSuggestion(), suggestions.getIsImgSuggestion()) &&
               ObjectsCompat.equals(getCreatedAt(), suggestions.getCreatedAt()) &&
               ObjectsCompat.equals(getUpdatedAt(), suggestions.getUpdatedAt());
       }
@@ -79,6 +87,7 @@ public final class Suggestions implements Model {
     return new StringBuilder()
       .append(getId())
       .append(getSuggestion())
+      .append(getIsImgSuggestion())
       .append(getCreatedAt())
       .append(getUpdatedAt())
       .toString()
@@ -91,6 +100,7 @@ public final class Suggestions implements Model {
       .append("Suggestions {")
       .append("id=" + String.valueOf(getId()) + ", ")
       .append("suggestion=" + String.valueOf(getSuggestion()) + ", ")
+      .append("is_img_suggestion=" + String.valueOf(getIsImgSuggestion()) + ", ")
       .append("createdAt=" + String.valueOf(getCreatedAt()) + ", ")
       .append("updatedAt=" + String.valueOf(getUpdatedAt()))
       .append("}")
@@ -112,31 +122,36 @@ public final class Suggestions implements Model {
   public static Suggestions justId(String id) {
     return new Suggestions(
       id,
+      null,
       null
     );
   }
   
   public CopyOfBuilder copyOfBuilder() {
     return new CopyOfBuilder(id,
-      suggestion);
+      suggestion,
+      is_img_suggestion);
   }
   public interface BuildStep {
     Suggestions build();
     BuildStep id(String id);
     BuildStep suggestion(String suggestion);
+    BuildStep isImgSuggestion(Boolean isImgSuggestion);
   }
   
 
   public static class Builder implements BuildStep {
     private String id;
     private String suggestion;
+    private Boolean is_img_suggestion;
     public Builder() {
       
     }
     
-    private Builder(String id, String suggestion) {
+    private Builder(String id, String suggestion, Boolean is_img_suggestion) {
       this.id = id;
       this.suggestion = suggestion;
+      this.is_img_suggestion = is_img_suggestion;
     }
     
     @Override
@@ -145,12 +160,19 @@ public final class Suggestions implements Model {
         
         return new Suggestions(
           id,
-          suggestion);
+          suggestion,
+          is_img_suggestion);
     }
     
     @Override
      public BuildStep suggestion(String suggestion) {
         this.suggestion = suggestion;
+        return this;
+    }
+    
+    @Override
+     public BuildStep isImgSuggestion(Boolean isImgSuggestion) {
+        this.is_img_suggestion = isImgSuggestion;
         return this;
     }
     
@@ -166,14 +188,19 @@ public final class Suggestions implements Model {
   
 
   public final class CopyOfBuilder extends Builder {
-    private CopyOfBuilder(String id, String suggestion) {
-      super(id, suggestion);
+    private CopyOfBuilder(String id, String suggestion, Boolean isImgSuggestion) {
+      super(id, suggestion, is_img_suggestion);
       
     }
     
     @Override
      public CopyOfBuilder suggestion(String suggestion) {
       return (CopyOfBuilder) super.suggestion(suggestion);
+    }
+    
+    @Override
+     public CopyOfBuilder isImgSuggestion(Boolean isImgSuggestion) {
+      return (CopyOfBuilder) super.isImgSuggestion(isImgSuggestion);
     }
   }
   

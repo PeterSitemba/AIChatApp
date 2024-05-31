@@ -6,6 +6,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.chat.ChatRole
+import com.aallam.openai.api.image.ImageCreation
+import com.aallam.openai.api.image.ImageSize
+import com.aallam.openai.api.model.ModelId
 import com.amplifyframework.auth.AuthUserAttributeKey
 import com.amplifyframework.auth.cognito.AWSCognitoAuthSession
 import com.amplifyframework.auth.cognito.result.AWSCognitoAuthSignOutResult
@@ -15,13 +18,14 @@ import com.amplifyframework.datastore.events.ModelSyncedEvent
 import com.amplifyframework.datastore.generated.model.ChatGPTLLMs
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.ChatMessageObject
+import com.amplifyframework.datastore.generated.model.Suggestions
 import com.amplifyframework.datastore.generated.model.TokenManagement
 import com.bootsnip.aichat.db.ChatHistory
 import com.bootsnip.aichat.db.ChatHistoryUpdate
 import com.bootsnip.aichat.db.ChatHistoryUpdateFav
 import com.bootsnip.aichat.db.TokensUpdate
 import com.bootsnip.aichat.model.AstraChatMessage
-import com.bootsnip.aichat.repo.IAiRepo
+import com.bootsnip.aichat.repo.IAstraRepo
 import com.bootsnip.aichat.util.AssistantType
 import com.bootsnip.aichat.util.DateUtil
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,17 +42,21 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AstraViewModel @Inject constructor(
-    private val repo: IAiRepo,
+    private val repo: IAstraRepo,
     application: Application
 ) : AndroidViewModel(application) {
 
-    val chatList: MutableStateFlow<MutableList<ChatMessage>> = MutableStateFlow(mutableListOf())
+    val chatList: MutableStateFlow<MutableList<AstraChatMessage>> =
+        MutableStateFlow(mutableListOf())
 
-    val errorChatList: MutableStateFlow<MutableList<ChatMessage>> =
+    val errorChatList: MutableStateFlow<MutableList<AstraChatMessage>> =
         MutableStateFlow(mutableListOf())
 
     private val _isGPTResponseLoading = MutableStateFlow(false)
     val isGPTResponseLoading = _isGPTResponseLoading.asStateFlow()
+
+    private val _isImagePrompt = MutableStateFlow(false)
+    val isImagePrompt = _isImagePrompt.asStateFlow()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
@@ -136,7 +144,8 @@ class AstraViewModel @Inject constructor(
     private val _tokenManagement: MutableStateFlow<TokenManagement?> = MutableStateFlow(null)
     private val tokenManagement = _tokenManagement.asStateFlow()
 
-    private val _suggestions: MutableStateFlow<MutableList<String>> = MutableStateFlow(mutableListOf())
+    private val _suggestions: MutableStateFlow<MutableList<Suggestions>> =
+        MutableStateFlow(mutableListOf())
     val suggestions = _suggestions.asStateFlow()
 
     init {
@@ -167,7 +176,11 @@ class AstraViewModel @Inject constructor(
 
                 chatList.value = newQueryList.apply {
                     this.add(
-                        ChatMessage(ChatRole.User, gptQuery)
+                        AstraChatMessage(
+                            role = ChatRole.User,
+                            content = gptQuery,
+                            isImagePrompt = false
+                        )
                     )
                 }
 
@@ -180,14 +193,48 @@ class AstraViewModel @Inject constructor(
         }
     }
 
-    private fun checkOpenAiSyncAndGetResponse(newQueryList: MutableList<ChatMessage>) {
+    fun getImageUrlResponse(gptQuery: String) {
+        _isGPTResponseLoading.value = true
+
+        viewModelScope.launch {
+            try {
+                isUpdate = chatList.value.isNotEmpty()
+
+                val newQueryList = chatList.value.toMutableList()
+
+                chatList.value = newQueryList.apply {
+                    this.add(
+                        AstraChatMessage(
+                            role = ChatRole.User,
+                            content = gptQuery,
+                            isImagePrompt = true
+                        )
+                    )
+                }
+
+                checkOpenAiSyncAndGetImageUrl(gptQuery)
+            } catch (e: Exception) {
+                //Handle error scenario
+                _isGPTResponseLoading.value = false
+            }
+        }
+    }
+
+
+    private fun checkOpenAiSyncAndGetResponse(newQueryList: MutableList<AstraChatMessage>) {
         viewModelScope.launch {
             if (openAiAuth.value.isEmpty()) {
                 delay(1000)
                 checkOpenAiSyncAndGetResponse(newQueryList)
             } else {
+                val chatMessageList = newQueryList.map {
+                    ChatMessage(
+                        it.role,
+                        it.content
+                    )
+                }
                 val response = repo.gtpChatResponse(
-                    newQueryList.toList(),
+                    chatMessageList.toList(),
                     openAiAuth.value,
                     selectedGPTLLM.value?.llmVersion ?: "gpt-3.5-turbo"
                 )
@@ -198,7 +245,11 @@ class AstraViewModel @Inject constructor(
                 val newResponseList = chatList.value.toMutableList()
                 chatList.value = newResponseList.apply {
                     this.add(
-                        ChatMessage(role, message)
+                        AstraChatMessage(
+                            role = role,
+                            content = message,
+                            isImagePrompt = false
+                        )
                     )
                 }
 
@@ -213,6 +264,44 @@ class AstraViewModel @Inject constructor(
                 Log.d("GPT RESPONSE ID", response.id)
                 _isGPTResponseLoading.value = false
 
+            }
+        }
+    }
+
+    private fun checkOpenAiSyncAndGetImageUrl(gptQuery: String) {
+        viewModelScope.launch {
+            if (openAiAuth.value.isEmpty()) {
+                delay(1000)
+                checkOpenAiSyncAndGetImageUrl(gptQuery)
+            } else {
+
+                val imageCreation = ImageCreation(
+                    prompt = gptQuery,
+                    model = ModelId(selectedGPTLLM.value?.llmVersion ?: "dall-e-2"),
+                    n = 1,
+                    size = ImageSize.is1024x1024
+                )
+
+                val response = repo.gptImageCreation(
+                    imageCreation,
+                    openAiAuth.value
+                )
+
+                val url = response.firstOrNull()?.url
+
+                val newResponseList = chatList.value.toMutableList()
+                chatList.value = newResponseList.apply {
+                    this.add(
+                        AstraChatMessage(
+                            role = ChatRole.Assistant,
+                            content = url,
+                            isImagePrompt = true
+                        )
+                    )
+                }
+
+                insertOrUpdateChatHistoryDb()
+                _isGPTResponseLoading.value = false
             }
         }
     }
@@ -319,13 +408,7 @@ class AstraViewModel @Inject constructor(
     }
 
     private fun insertOrUpdateChatHistoryDb() {
-        val chatList = chatList.value.map { chatMessage ->
-            AstraChatMessage(
-                chatMessage.role,
-                chatMessage.content
-            )
-        }
-
+        val chatList = chatList.value
         if (isUpdate) {
             val chatHistoryUpdate = ChatHistoryUpdate(
                 currentRowId.value?.toInt(),
@@ -472,14 +555,7 @@ class AstraViewModel @Inject constructor(
         val chatHistory = chatHistory.value.find {
             it.uid == uid
         }
-
-        chatList.value = chatHistory?.chatMessageList?.map {
-            ChatMessage(
-                it.role,
-                it.content
-            )
-        }?.toMutableList() ?: mutableListOf()
-
+        chatList.value = chatHistory?.chatMessageList?.toMutableList() ?: mutableListOf()
         currentRowId.value = uid.toLong()
     }
 
@@ -581,8 +657,9 @@ class AstraViewModel @Inject constructor(
 
             val chatList = chatHistoryRemote.chatMessageList.map {
                 AstraChatMessage(
-                    ChatRole(it.role),
-                    it.content
+                    role = ChatRole(it.role),
+                    content = it.content,
+                    isImagePrompt = false
                 )
             }
 
@@ -683,15 +760,17 @@ class AstraViewModel @Inject constructor(
                 val newList = chatList.value.toMutableList()
                 errorChatList.value = newList.apply {
                     this.add(
-                        ChatMessage(
-                            ChatRole.User,
-                            gptQuery
+                        AstraChatMessage(
+                            role = ChatRole.User,
+                            content = gptQuery,
+                            isImagePrompt = false
                         )
                     )
                     this.add(
-                        ChatMessage(
-                            ChatRole.Assistant,
-                            "Oops, you've run out of tokens for today! Please purchase a subscription to continue enjoying Astra AI."
+                        AstraChatMessage(
+                            role = ChatRole.Assistant,
+                            content = "Oops, you've run out of tokens for today! Please purchase a subscription to continue enjoying Astra AI.",
+                            isImagePrompt = false
                         )
                     )
                 }
@@ -702,6 +781,9 @@ class AstraViewModel @Inject constructor(
     fun setSelectedLLM(llMVersion: String) {
         val selectLLM = gptLLMs.value.find { it.llmVersion == llMVersion }
         _selectedGPTLLM.value = selectLLM
+        val isImagePrompt = selectLLM?.llmVersion?.startsWith("dall-e") ?: false
+        _isImagePrompt.value = isImagePrompt
+        startNewChat()
     }
 
     fun setSelectedResponse(selectedResponse: String) {
@@ -867,14 +949,14 @@ class AstraViewModel @Inject constructor(
 
     private fun querySuggestions() {
         viewModelScope.launch {
-            val list = mutableListOf<String>()
+            val list = mutableListOf<Suggestions>()
             val response = repo.querySuggestions()
 
             response
                 .catch { Log.e("Queried Suggestions", "Error querying suggestions", it) }
                 .collect {
                     try {
-                        list.add(it.suggestion)
+                        list.add(it)
                     } catch (e: Exception) {
                         Log.e("Queried Suggestions", e.message.toString())
                     }
@@ -886,14 +968,14 @@ class AstraViewModel @Inject constructor(
 
     private fun observeSuggestionChanges() {
         viewModelScope.launch {
-            val list = mutableListOf<String>()
+            val list = mutableListOf<Suggestions>()
             val response = repo.observeSuggestions()
 
             response
                 .catch { Log.e("Queried Suggestions", "Error querying suggestions", it) }
                 .collect {
                     try {
-                        list.add(it.item().suggestion)
+                        list.add(it.item())
                     } catch (e: Exception) {
                         Log.e("Token Management", e.message.toString())
                     }

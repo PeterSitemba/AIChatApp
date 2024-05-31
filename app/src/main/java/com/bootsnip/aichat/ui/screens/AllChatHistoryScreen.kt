@@ -39,7 +39,8 @@ fun AllChatHistoryScreen(
                     userPlaceHolder = it.chatMessageList?.get(0)?.content ?: "Message",
                     astraPlaceHolder = it.chatMessageList?.get(1)?.content ?: "Message",
                     isFav = it.fav == 1,
-                    id = it.uid!!
+                    id = it.uid!!,
+                    isImagePrompt = it.chatMessageList?.firstOrNull()?.isImagePrompt ?: false
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))

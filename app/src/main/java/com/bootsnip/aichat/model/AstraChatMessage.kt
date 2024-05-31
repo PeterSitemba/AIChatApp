@@ -6,5 +6,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class AstraChatMessage(
     val role: Role,
-    val content: String?
+    val content: String?,
+    val isImagePrompt: Boolean,
 )
