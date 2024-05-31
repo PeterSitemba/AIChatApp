@@ -6,6 +6,7 @@ import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.chat.ChatRole
 import com.aallam.openai.api.image.ImageCreation
 import com.aallam.openai.api.image.ImageURL
+import com.aallam.openai.api.image.ImageVariation
 import com.aallam.openai.client.OpenAI
 import com.amplifyframework.auth.AuthSession
 import com.amplifyframework.auth.AuthUser
@@ -81,6 +82,14 @@ class AstraRepo @Inject constructor(
     ): List<ImageURL> =
         withContext(ioDispatcher) {
             OpenAI(token = openAiAuth).imageURL(imageCreation)
+        }
+
+    override suspend fun gptImageVariation(
+        imageVariation: ImageVariation,
+        openAiAuth: String
+    ): List<ImageURL> =
+        withContext(ioDispatcher) {
+            OpenAI(token = openAiAuth).imageURL(imageVariation)
         }
 
     //region room db functions

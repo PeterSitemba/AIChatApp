@@ -10,7 +10,6 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -29,6 +27,8 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -237,25 +237,26 @@ fun AstraNavGraph(
                     title = {
                         when (currentRoute) {
                             AllDestinations.HOME -> {
-                                Column {
+                                ExposedDropdownMenuBox(
+                                    expanded = showDropDown,
+                                    onExpandedChange = { showDropDown = !showDropDown }
+                                ) {
+
                                     Button(
-                                        onClick = {
-                                            showDropDown = true
-                                        },
+                                        onClick = {},
                                         contentPadding = PaddingValues(
                                             bottom = 8.dp,
                                             top = 8.dp,
                                             start = 12.dp,
                                             end = 4.dp
                                         ),
-                                        colors = buttonColors
+                                        colors = buttonColors,
+                                        modifier = Modifier.width(170.dp).menuAnchor()
                                     ) {
                                         Text(text = selectedGPTLLM?.displayName ?: "GPT - 3.5")
 
-                                        Icon(
-                                            Icons.Default.KeyboardArrowDown,
-                                            contentDescription = "",
-                                            modifier = Modifier.padding(start = 4.dp)
+                                        ExposedDropdownMenuDefaults.TrailingIcon(
+                                            expanded = showDropDown
                                         )
                                     }
 
@@ -272,11 +273,14 @@ fun AstraNavGraph(
                                             } else {
                                                 viewModel.showPurchaseScreen.value = subscribed
                                             }
-                                        }
+                                        },
+                                        modifier = Modifier.width(170.dp)
                                     )
                                 }
+
                             }
                         }
+
                     },
                     modifier = Modifier.fillMaxWidth(),
                     navigationIcon = {
@@ -343,7 +347,7 @@ fun AstraNavGraph(
                                 }
 
                                 IconButton(onClick = {
-                                    if(chatList.isNotEmpty()){
+                                    if (chatList.isNotEmpty()) {
                                         showNewChatDialog = true
                                     }
                                 }) {

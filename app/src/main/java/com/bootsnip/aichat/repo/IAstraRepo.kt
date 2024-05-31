@@ -4,6 +4,7 @@ import com.aallam.openai.api.chat.ChatCompletion
 import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.image.ImageCreation
 import com.aallam.openai.api.image.ImageURL
+import com.aallam.openai.api.image.ImageVariation
 import com.amplifyframework.auth.AuthSession
 import com.amplifyframework.auth.AuthUser
 import com.amplifyframework.auth.AuthUserAttribute
@@ -29,6 +30,8 @@ interface IAstraRepo {
     suspend fun gtpChatResponse(query: List<ChatMessage>, openAiAuth: String, modelId: String): ChatCompletion
 
     suspend fun gptImageCreation(imageCreation: ImageCreation, openAiAuth: String): List<ImageURL>
+
+    suspend fun gptImageVariation(imageVariation: ImageVariation, openAiAuth: String): List<ImageURL>
 
     //region room db chat history
     fun insertChatHistory(chatHistory: ChatHistory): Long

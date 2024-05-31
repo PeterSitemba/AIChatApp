@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.amplifyframework.datastore.generated.model.ChatGPTLLMs
 import com.bootsnip.aichat.R
@@ -25,12 +24,13 @@ fun GPTDropDownList(
     expanded: Boolean,
     unlimited: Boolean,
     showDropDown: (Boolean) -> Unit,
-    selectedLLM: (String, Boolean) -> Unit
+    selectedLLM: (String, Boolean) -> Unit,
+    modifier: Modifier
 ) {
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = { showDropDown(false) },
-        offset = if(unlimited) DpOffset((-20).dp, 0.dp) else DpOffset((-34).dp, 0.dp)
+        modifier = modifier
     ) {
         llmList.sortedBy { it.sortOrder }.forEach {
             DropdownMenuItem(

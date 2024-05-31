@@ -1,10 +1,12 @@
 package com.bootsnip.aichat.ui.screens
 
+import android.graphics.drawable.BitmapDrawable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -33,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,20 +54,25 @@ import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.ImageLoader
+import coil.request.ImageRequest
+import coil.request.SuccessResult
 import com.aallam.openai.api.core.Role
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.components.AiChatBox
-import com.bootsnip.aichat.ui.components.SuggestionsDialog
 import com.bootsnip.aichat.ui.components.AstraTextSelectionActionSheet
 import com.bootsnip.aichat.ui.components.DotsLoadingIndicator
 import com.bootsnip.aichat.ui.components.HomePlaceholder
 import com.bootsnip.aichat.ui.components.NetworkConnectionDialog
+import com.bootsnip.aichat.ui.components.SuggestionsDialog
 import com.bootsnip.aichat.ui.components.TechnicalErrorDialog
 import com.bootsnip.aichat.ui.components.UserChatBox
 import com.bootsnip.aichat.ui.components.UserTextSelectionActionSheet
 import com.bootsnip.aichat.util.FormatChatShare
 import com.bootsnip.aichat.util.NetworkConnection
+import com.bootsnip.aichat.util.getFilePath
 import com.bootsnip.aichat.viewmodel.AstraViewModel
+import kotlinx.coroutines.launch
 import okhttp3.internal.toImmutableList
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -85,6 +93,8 @@ fun HomeScreen(
 
     val listState = rememberLazyListState()
     val interactionSource = remember { MutableInteractionSource() }
+    val coroutineScope = rememberCoroutineScope()
+
 
     var prompt by remember { mutableStateOf("") }
 
@@ -118,6 +128,7 @@ fun HomeScreen(
     var chatItemIndex by remember {
         mutableIntStateOf(0)
     }
+
 
     LaunchedEffect(gptChatList.size, errorList.size) {
         if (errorList.size > 0) {
@@ -258,23 +269,48 @@ fun HomeScreen(
                         }
 
                         Role("assistant") -> {
-                            AiChatBox(
-                                item.content.orEmpty(),
-                                item.isImagePrompt,
-                                modifier = Modifier
-                                    .combinedClickable(
-                                        onClick = { },
-                                        onLongClick = {
-                                            if (!item.isImagePrompt) {
-                                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                showAstraModalBottomSheet = true
-                                                selectedResponse = item.content.orEmpty()
-                                                chatItemIndex = index
+                            Column {
+                                AiChatBox(
+                                    item.content.orEmpty(),
+                                    item.isImagePrompt,
+                                    modifier = Modifier
+                                        .combinedClickable(
+                                            onClick = { },
+                                            onLongClick = {
+                                                if (!item.isImagePrompt) {
+                                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    showAstraModalBottomSheet = true
+                                                    selectedResponse = item.content.orEmpty()
+                                                    chatItemIndex = index
+                                                }
+                                            },
+                                            onLongClickLabel = stringResource(R.string.new_chat)
+                                        ),
+                                    onCreateVariationClicked = {
+                                        viewModel.showGPTResponseLoadingIndicator()
+                                        coroutineScope.launch {
+                                            val loader = ImageLoader(context)
+                                            val request = ImageRequest.Builder(context)
+                                                .data(item.content)
+                                                .allowHardware(false)
+                                                .build()
+                                            val result =
+                                                (loader.execute(request) as SuccessResult).drawable
+                                            val bitmap = (result as BitmapDrawable).bitmap
+                                            val (fileName, inputStream) = bitmap.getFilePath(
+                                                context
+                                            )
+                                            inputStream?.let {
+                                                viewModel.getImageVariationResponse(
+                                                    fileName,
+                                                    it
+                                                )
                                             }
-                                        },
-                                        onLongClickLabel = stringResource(R.string.new_chat)
-                                    )
-                            )
+                                        }
+                                    },
+                                    enabledVariationButton = !isLoading
+                                )
+                            }
                         }
 
                         else -> {}

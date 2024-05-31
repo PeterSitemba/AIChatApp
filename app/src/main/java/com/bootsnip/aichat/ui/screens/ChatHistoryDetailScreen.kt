@@ -147,7 +147,8 @@ fun ChatHistoryDetailScreen(
                                         }
                                     },
                                     onLongClickLabel = stringResource(R.string.new_chat)
-                                )
+                                ),
+                                variationButtonVisible = false
                             )
                         }
 

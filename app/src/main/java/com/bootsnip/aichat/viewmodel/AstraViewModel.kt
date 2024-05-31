@@ -1,13 +1,17 @@
 package com.bootsnip.aichat.viewmodel
 
 import android.app.Application
+import android.content.Context
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.chat.ChatRole
+import com.aallam.openai.api.file.FileSource
 import com.aallam.openai.api.image.ImageCreation
 import com.aallam.openai.api.image.ImageSize
+import com.aallam.openai.api.image.ImageVariation
 import com.aallam.openai.api.model.ModelId
 import com.amplifyframework.auth.AuthUserAttributeKey
 import com.amplifyframework.auth.cognito.AWSCognitoAuthSession
@@ -28,6 +32,7 @@ import com.bootsnip.aichat.model.AstraChatMessage
 import com.bootsnip.aichat.repo.IAstraRepo
 import com.bootsnip.aichat.util.AssistantType
 import com.bootsnip.aichat.util.DateUtil
+import com.bootsnip.aichat.util.getFilePath
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -37,6 +42,10 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okio.FileSystem
+import okio.Path.Companion.toPath
+import okio.source
+import java.io.InputStream
 import java.sql.Timestamp
 import javax.inject.Inject
 
@@ -220,6 +229,21 @@ class AstraViewModel @Inject constructor(
         }
     }
 
+    fun getImageVariationResponse(fileName: String, inputStream: InputStream) {
+        _isGPTResponseLoading.value = true
+
+        viewModelScope.launch {
+            try {
+                isUpdate = chatList.value.isNotEmpty()
+
+                checkOpenAiSyncAndGetImageVariation(fileName, inputStream)
+            } catch (e: Exception) {
+                //Handle error scenario
+                _isGPTResponseLoading.value = false
+            }
+        }
+    }
+
 
     private fun checkOpenAiSyncAndGetResponse(newQueryList: MutableList<AstraChatMessage>) {
         viewModelScope.launch {
@@ -305,6 +329,48 @@ class AstraViewModel @Inject constructor(
             }
         }
     }
+
+    private fun checkOpenAiSyncAndGetImageVariation(fileName: String, inputStream: InputStream) {
+        viewModelScope.launch {
+            if (openAiAuth.value.isEmpty()) {
+                delay(1000)
+                checkOpenAiSyncAndGetImageVariation(fileName, inputStream)
+            } else {
+                try {
+                    val imageVariation = ImageVariation(
+                        image = FileSource(name = fileName, source = inputStream.source()),
+                        model = ModelId("dall-e-2"),
+                        n = 1,
+                        size = ImageSize.is1024x1024
+                    )
+
+                    val response = repo.gptImageVariation(
+                        imageVariation,
+                        openAiAuth.value
+                    )
+
+                    val url = response.firstOrNull()?.url
+
+                    val newResponseList = chatList.value.toMutableList()
+                    chatList.value = newResponseList.apply {
+                        this.add(
+                            AstraChatMessage(
+                                role = ChatRole.Assistant,
+                                content = url,
+                                isImagePrompt = true
+                            )
+                        )
+                    }
+
+                    insertOrUpdateChatHistoryDb()
+                } catch (e: Exception) {
+                    Log.e("Error", e.message.toString())
+                }
+                _isGPTResponseLoading.value = false
+            }
+        }
+    }
+
 
     private fun prepareOpenAI() {
         viewModelScope.launch {
@@ -999,5 +1065,9 @@ class AstraViewModel @Inject constructor(
     fun showSignOutFailedSnackBar(showFailed: Boolean) {
         _showSignOutFailedSnackBar.value = showFailed
         _isSnackBarSuccess.value = false
+    }
+
+    fun showGPTResponseLoadingIndicator() {
+        _isGPTResponseLoading.value = true
     }
 }

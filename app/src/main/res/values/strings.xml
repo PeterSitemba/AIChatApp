@@ -34,4 +34,5 @@
     <string name="you">You</string>
     <string name="technical_error_header">Oops, we ran into an error</string>
     <string name="techincal_error_body">We ran into a technical issue. Please try again later</string>
+    <string name="create_variation">create variation</string>
 </resources>
