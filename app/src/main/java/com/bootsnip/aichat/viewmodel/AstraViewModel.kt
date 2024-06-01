@@ -1,11 +1,13 @@
 package com.bootsnip.aichat.viewmodel
 
 import android.app.Application
-import android.content.Context
-import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import coil.ImageLoader
+import coil.request.ImageRequest
+import coil.request.SuccessResult
 import com.aallam.openai.api.chat.ChatMessage
 import com.aallam.openai.api.chat.ChatRole
 import com.aallam.openai.api.file.FileSource
@@ -32,7 +34,7 @@ import com.bootsnip.aichat.model.AstraChatMessage
 import com.bootsnip.aichat.repo.IAstraRepo
 import com.bootsnip.aichat.util.AssistantType
 import com.bootsnip.aichat.util.DateUtil
-import com.bootsnip.aichat.util.getFilePath
+import com.bootsnip.aichat.util.saveImageAndRetrieveUri
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -42,8 +44,6 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okio.FileSystem
-import okio.Path.Companion.toPath
 import okio.source
 import java.io.InputStream
 import java.sql.Timestamp
@@ -313,12 +313,25 @@ class AstraViewModel @Inject constructor(
 
                     val url = response.firstOrNull()?.url
 
+                    val loader = ImageLoader(getApplication<Application>().applicationContext)
+                    val request = ImageRequest.Builder(getApplication<Application>().applicationContext)
+                        .data(url)
+                        .allowHardware(false)
+                        .build()
+                    val result =
+                        (loader.execute(request) as SuccessResult).drawable
+                    val bitmap = (result as BitmapDrawable).bitmap
+
+                    val uri = bitmap.saveImageAndRetrieveUri(getApplication<Application>().applicationContext)
+
+                    Log.i("FILE PATH", uri)
+
                     val newResponseList = chatList.value.toMutableList()
                     chatList.value = newResponseList.apply {
                         this.add(
                             AstraChatMessage(
                                 role = ChatRole.Assistant,
-                                content = url,
+                                content = uri,
                                 isImagePrompt = true
                             )
                         )
@@ -355,12 +368,23 @@ class AstraViewModel @Inject constructor(
 
                     val url = response.firstOrNull()?.url
 
+                    val loader = ImageLoader(getApplication<Application>().applicationContext)
+                    val request = ImageRequest.Builder(getApplication<Application>().applicationContext)
+                        .data(url)
+                        .allowHardware(false)
+                        .build()
+                    val result =
+                        (loader.execute(request) as SuccessResult).drawable
+                    val bitmap = (result as BitmapDrawable).bitmap
+
+                    val uri = bitmap.saveImageAndRetrieveUri(getApplication<Application>().applicationContext)
+
                     val newResponseList = chatList.value.toMutableList()
                     chatList.value = newResponseList.apply {
                         this.add(
                             AstraChatMessage(
                                 role = ChatRole.Assistant,
-                                content = url,
+                                content = uri,
                                 isImagePrompt = true
                             )
                         )
@@ -1073,5 +1097,9 @@ class AstraViewModel @Inject constructor(
 
     fun showGPTResponseLoadingIndicator() {
         _isGPTResponseLoading.value = true
+    }
+
+    fun dismissGPTResponseLoadingIndicator() {
+        _isGPTResponseLoading.value = false
     }
 }

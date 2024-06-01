@@ -7,14 +7,14 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import java.io.*
-import java.util.Random
 
 
-fun Bitmap.getFilePath(context: Context): Pair<String, InputStream?> {
-    val filename = "${System.currentTimeMillis()}.png"
+fun Bitmap.saveImageAndRetrieveUri(context: Context): String {
+    val filename = "ASTRAIMG:${System.currentTimeMillis()}.png"
     var fos: OutputStream? = null
-    var inputStream: InputStream? = null
+    var filePath = ""
     context.contentResolver?.also { resolver ->
         val contentValues = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
@@ -24,36 +24,43 @@ fun Bitmap.getFilePath(context: Context): Pair<String, InputStream?> {
         val imageUri: Uri? =
             resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
         fos = imageUri?.let { resolver.openOutputStream(it) }
-        inputStream = imageUri?.let { resolver.openInputStream(it) }
+        filePath = imageUri.toString()
     }
 
     fos?.use {
         this.compress(Bitmap.CompressFormat.PNG, 100, it)
     }
 
-    return Pair(filename, inputStream)
+    return filePath
 }
 
-fun Bitmap.shareImage(
+fun getFileNameAndInputStream(context: Context, uri: Uri): Pair<String, InputStream?> {
+    var inputStream: InputStream? = null
+    var fileName = ""
+    context.contentResolver?.also { resolver ->
+        uri.let {
+            inputStream = resolver.openInputStream(it)
+            resolver.query(it, null, null, null, null)
+        }?.use { cursor ->
+            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            cursor.moveToFirst()
+            fileName = cursor.getString(nameIndex)
+        }
+    }
+    return Pair(fileName, inputStream)
+}
+
+
+fun shareImage(
     context: Context,
-    isLoading: (Boolean) -> Unit
+    uri: Uri,
+    isLoading: (Boolean) -> Unit,
 ) {
-    val rand = Random()
-    val randNo = rand.nextInt(100000)
-
-    val imgBitmapPath = MediaStore.Images.Media.insertImage(
-        context.contentResolver, this,
-        "ASTRAIMG:$randNo", null
-    )
-    val uri = Uri.parse(imgBitmapPath)
-
-    // share Intent
     val shareIntent = Intent(Intent.ACTION_SEND)
     shareIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
     shareIntent.putExtra(Intent.EXTRA_STREAM, uri)
     shareIntent.type = "image/jpg"
     shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    // Open the chooser dialog box
     context.startActivity(Intent.createChooser(shareIntent, "Share with"))
     isLoading(false)
 }

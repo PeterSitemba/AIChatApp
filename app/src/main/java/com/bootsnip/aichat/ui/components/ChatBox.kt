@@ -1,6 +1,6 @@
 package com.bootsnip.aichat.ui.components
 
-import android.graphics.drawable.BitmapDrawable
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -33,15 +35,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.ImageLoader
 import coil.compose.SubcomposeAsyncImage
-import coil.request.ImageRequest
-import coil.request.SuccessResult
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.util.shareImage
 import kotlinx.coroutines.launch
@@ -107,7 +105,7 @@ fun AiChatBox(
                                 .padding(top = 12.dp, bottom = 6.dp, end = 8.dp)
                                 .wrapContentHeight()
                                 .clip(RoundedCornerShape(20.dp)),
-                            model = response,
+                            model = Uri.parse(response),
                             loading = {
                                 DotsLoadingIndicator()
                                 imageLoadingIndicator = true
@@ -127,19 +125,17 @@ fun AiChatBox(
                         if (!imageLoadingIndicator) {
                             IconButton(
                                 onClick = {
-                                    sharingLoadingIndicator = true
-                                    coroutineScope.launch {
-                                        val loader = ImageLoader(context)
-                                        val request = ImageRequest.Builder(context)
-                                            .data(response)
-                                            .allowHardware(false)
-                                            .build()
-                                        val result = (loader.execute(request) as SuccessResult).drawable
-                                        val bitmap = (result as BitmapDrawable).bitmap
-                                        bitmap.shareImage(context) {
-                                            sharingLoadingIndicator = it
+                                    try {
+                                        sharingLoadingIndicator = true
+                                        coroutineScope.launch {
+                                            shareImage(context, Uri.parse(response)) {
+                                                sharingLoadingIndicator = it
+                                            }
                                         }
+                                    }catch (e: Exception) {
+                                        sharingLoadingIndicator = false
                                     }
+
                                 },
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
@@ -152,7 +148,7 @@ fun AiChatBox(
                                     )
                                 else
                                     Icon(
-                                        painterResource(id = R.drawable.arrow_down),
+                                        Icons.Default.Share,
                                         contentDescription = ""
                                     )
                             }

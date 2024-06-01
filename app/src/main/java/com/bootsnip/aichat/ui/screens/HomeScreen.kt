@@ -1,6 +1,6 @@
 package com.bootsnip.aichat.ui.screens
 
-import android.graphics.drawable.BitmapDrawable
+import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.combinedClickable
@@ -54,9 +54,6 @@ import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.ImageLoader
-import coil.request.ImageRequest
-import coil.request.SuccessResult
 import com.aallam.openai.api.core.Role
 import com.bootsnip.aichat.R
 import com.bootsnip.aichat.ui.components.AiChatBox
@@ -70,7 +67,7 @@ import com.bootsnip.aichat.ui.components.UserChatBox
 import com.bootsnip.aichat.ui.components.UserTextSelectionActionSheet
 import com.bootsnip.aichat.util.FormatChatShare
 import com.bootsnip.aichat.util.NetworkConnection
-import com.bootsnip.aichat.util.getFilePath
+import com.bootsnip.aichat.util.getFileNameAndInputStream
 import com.bootsnip.aichat.viewmodel.AstraViewModel
 import kotlinx.coroutines.launch
 import okhttp3.internal.toImmutableList
@@ -289,22 +286,19 @@ fun HomeScreen(
                                     onCreateVariationClicked = {
                                         viewModel.showGPTResponseLoadingIndicator()
                                         coroutineScope.launch {
-                                            val loader = ImageLoader(context)
-                                            val request = ImageRequest.Builder(context)
-                                                .data(item.content)
-                                                .allowHardware(false)
-                                                .build()
-                                            val result =
-                                                (loader.execute(request) as SuccessResult).drawable
-                                            val bitmap = (result as BitmapDrawable).bitmap
-                                            val (fileName, inputStream) = bitmap.getFilePath(
-                                                context
-                                            )
-                                            inputStream?.let {
-                                                viewModel.getImageVariationResponse(
-                                                    fileName,
-                                                    it
+                                            try {
+                                                val (fileName, inputStream) = getFileNameAndInputStream(
+                                                    context,
+                                                    Uri.parse(item.content)
                                                 )
+                                                inputStream?.let {
+                                                    viewModel.getImageVariationResponse(
+                                                        fileName,
+                                                        it
+                                                    )
+                                                }
+                                            } catch (e: Exception) {
+                                                viewModel.dismissGPTResponseLoadingIndicator()
                                             }
                                         }
                                     },
