@@ -168,7 +168,8 @@ fun HomeScreen(
                     showNoInternetDialog = true
                 }
             },
-            suggestions = suggestionsToDisplay.map { it.suggestion }.toImmutableList()
+            suggestions = suggestionsToDisplay.map { it.suggestion }.toImmutableList(),
+            isImagePrompt = isImagePrompt
         )
     }
 

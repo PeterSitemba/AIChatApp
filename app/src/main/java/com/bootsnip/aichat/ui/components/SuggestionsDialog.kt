@@ -33,7 +33,8 @@ import com.bootsnip.aichat.ui.components.Suggestions.suggestionList
 fun SuggestionsDialog(
     showSuggestionDialog: (Boolean) -> Unit,
     onSuggestionClicked: (String) -> Unit,
-    suggestions: List<String>
+    suggestions: List<String>,
+    isImagePrompt: Boolean
 ) {
     Dialog(onDismissRequest = { showSuggestionDialog(false) }) {
         Surface(
@@ -63,7 +64,7 @@ fun SuggestionsDialog(
                     if (suggestions.isNotEmpty())
                         getRandomSuggestions(suggestions)
                     else
-                        getRandomSuggestions(suggestionList)
+                        getRandomSuggestions(suggestionList.filter { it.second == isImagePrompt }.map { it.first })
                 ) {
                     SuggestionListItem(it) {
                         onSuggestionClicked(it)
@@ -101,20 +102,30 @@ fun SuggestionListItem(
 
 object Suggestions {
     val suggestionList = listOf(
-        "Find me a recipe for a vegetarian lasagna with a twist.",
-        "Tell me a joke to lighten up my mood.",
-        "What's the latest news on advancements in renewable energy?",
-        "Create a shopping list for a Mexican-themed dinner party.",
-        "Find a beginner's guide to meditation.",
-        "Translate this phrase into French: 'Where is the nearest train station?'",
-        "What are some easy DIY home organization tips?",
-        "Suggest a 20-minute workout routine I can do at home with no equipment.",
-        "What are the top tourist attractions in Tokyo, Japan?",
-        "Find a reputable mechanic near me for an oil change.",
-        "What are some healthy snack options I can munch on during work?",
-        "Tell me a fun fact about space exploration.",
-        "What's the best way to clean stainless steel appliances?",
-        "Find a tutorial on how to tie a tie."
+        Pair("Find me a recipe for a vegetarian lasagna with a twist.", false),
+        Pair("Tell me a joke to lighten up my mood.", false),
+        Pair("What's the latest news on advancements in renewable energy?", false),
+        Pair("Create a shopping list for a Mexican-themed dinner party.", false),
+        Pair("Find a beginner's guide to meditation.", false),
+        Pair("Translate this phrase into French: 'Where is the nearest train station?'", false),
+        Pair("What are some easy DIY home organization tips?", false),
+        Pair("Suggest a 20-minute workout routine I can do at home with no equipment.", false),
+        Pair("What are the top tourist attractions in Tokyo, Japan?", false),
+        Pair("Find a reputable mechanic near me for an oil change.", false),
+        Pair("What are some healthy snack options I can munch on during work?", false),
+        Pair("Tell me a fun fact about space exploration.", false),
+        Pair("What's the best way to clean stainless steel appliances?", false),
+        Pair("Find a tutorial on how to tie a tie.", false),
+        Pair("A cat dressed as a pirate sailing on a tiny ship.", true),
+        Pair("A medieval knight standing in front of a grand castle.", true),
+        Pair("A magical forest with glowing plants and mythical creatures.", true),
+        Pair("A tropical beach with crystal clear water and palm trees at sunset.", true),
+        Pair("A serene lake surrounded by mountains during autumn.", true),
+        Pair("A cat dressed as a pirate sailing on a tiny ship.", true),
+        Pair("A traditional Japanese tea ceremony in a serene garden.", true),
+        Pair("Harry Potter characters in a cyberpunk setting.", true),
+        Pair("A dog wearing astronaut gear walking on the moon.", true),
+        Pair("A futuristic cityscape with flying cars and neon lights at night", true),
     )
 
     fun getRandomSuggestions(suggestions: List<String>): List<String> {

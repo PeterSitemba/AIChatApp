@@ -35,6 +35,7 @@ public final class TokenManagement implements Model {
   public static final QueryField PROMPT_TOKENS = field("TokenManagement", "prompt_tokens");
   public static final QueryField COMPLETION_TOKENS = field("TokenManagement", "completion_tokens");
   public static final QueryField TOTAL_TOKENS = field("TokenManagement", "total_tokens");
+  public static final QueryField IMAGE_GENERATIONS = field("TokenManagement", "image_generations");
   private final @ModelField(targetType="ID", isRequired = true) String id;
   private final @ModelField(targetType="String") String user_id;
   private final @ModelField(targetType="AWSEmail") String email;
@@ -44,6 +45,7 @@ public final class TokenManagement implements Model {
   private final @ModelField(targetType="Int", isRequired = true) Integer prompt_tokens;
   private final @ModelField(targetType="Int", isRequired = true) Integer completion_tokens;
   private final @ModelField(targetType="Int", isRequired = true) Integer total_tokens;
+  private final @ModelField(targetType="Int") Integer image_generations;
   private @ModelField(targetType="AWSDateTime", isReadOnly = true) Temporal.DateTime createdAt;
   private @ModelField(targetType="AWSDateTime", isReadOnly = true) Temporal.DateTime updatedAt;
   /** @deprecated This API is internal to Amplify and should not be used. */
@@ -88,6 +90,10 @@ public final class TokenManagement implements Model {
       return total_tokens;
   }
   
+  public Integer getImageGenerations() {
+      return image_generations;
+  }
+  
   public Temporal.DateTime getCreatedAt() {
       return createdAt;
   }
@@ -96,7 +102,7 @@ public final class TokenManagement implements Model {
       return updatedAt;
   }
   
-  private TokenManagement(String id, String user_id, String email, String identity_id, Boolean unlimited, String dummy_key, Integer prompt_tokens, Integer completion_tokens, Integer total_tokens) {
+  private TokenManagement(String id, String user_id, String email, String identity_id, Boolean unlimited, String dummy_key, Integer prompt_tokens, Integer completion_tokens, Integer total_tokens, Integer image_generations) {
     this.id = id;
     this.user_id = user_id;
     this.email = email;
@@ -106,6 +112,7 @@ public final class TokenManagement implements Model {
     this.prompt_tokens = prompt_tokens;
     this.completion_tokens = completion_tokens;
     this.total_tokens = total_tokens;
+    this.image_generations = image_generations;
   }
   
   @Override
@@ -125,6 +132,7 @@ public final class TokenManagement implements Model {
               ObjectsCompat.equals(getPromptTokens(), tokenManagement.getPromptTokens()) &&
               ObjectsCompat.equals(getCompletionTokens(), tokenManagement.getCompletionTokens()) &&
               ObjectsCompat.equals(getTotalTokens(), tokenManagement.getTotalTokens()) &&
+              ObjectsCompat.equals(getImageGenerations(), tokenManagement.getImageGenerations()) &&
               ObjectsCompat.equals(getCreatedAt(), tokenManagement.getCreatedAt()) &&
               ObjectsCompat.equals(getUpdatedAt(), tokenManagement.getUpdatedAt());
       }
@@ -142,6 +150,7 @@ public final class TokenManagement implements Model {
       .append(getPromptTokens())
       .append(getCompletionTokens())
       .append(getTotalTokens())
+      .append(getImageGenerations())
       .append(getCreatedAt())
       .append(getUpdatedAt())
       .toString()
@@ -161,6 +170,7 @@ public final class TokenManagement implements Model {
       .append("prompt_tokens=" + String.valueOf(getPromptTokens()) + ", ")
       .append("completion_tokens=" + String.valueOf(getCompletionTokens()) + ", ")
       .append("total_tokens=" + String.valueOf(getTotalTokens()) + ", ")
+      .append("image_generations=" + String.valueOf(getImageGenerations()) + ", ")
       .append("createdAt=" + String.valueOf(getCreatedAt()) + ", ")
       .append("updatedAt=" + String.valueOf(getUpdatedAt()))
       .append("}")
@@ -189,6 +199,7 @@ public final class TokenManagement implements Model {
       null,
       null,
       null,
+      null,
       null
     );
   }
@@ -202,7 +213,8 @@ public final class TokenManagement implements Model {
       dummy_key,
       prompt_tokens,
       completion_tokens,
-      total_tokens);
+      total_tokens,
+      image_generations);
   }
   public interface IdentityIdStep {
     UnlimitedStep identityId(String identityId);
@@ -235,6 +247,7 @@ public final class TokenManagement implements Model {
     BuildStep userId(String userId);
     BuildStep email(String email);
     BuildStep dummyKey(String dummyKey);
+    BuildStep imageGenerations(Integer imageGenerations);
   }
   
 
@@ -248,11 +261,12 @@ public final class TokenManagement implements Model {
     private String user_id;
     private String email;
     private String dummy_key;
+    private Integer image_generations;
     public Builder() {
       
     }
     
-    private Builder(String id, String user_id, String email, String identity_id, Boolean unlimited, String dummy_key, Integer prompt_tokens, Integer completion_tokens, Integer total_tokens) {
+    private Builder(String id, String user_id, String email, String identity_id, Boolean unlimited, String dummy_key, Integer prompt_tokens, Integer completion_tokens, Integer total_tokens, Integer image_generations) {
       this.id = id;
       this.user_id = user_id;
       this.email = email;
@@ -262,6 +276,7 @@ public final class TokenManagement implements Model {
       this.prompt_tokens = prompt_tokens;
       this.completion_tokens = completion_tokens;
       this.total_tokens = total_tokens;
+      this.image_generations = image_generations;
     }
     
     @Override
@@ -277,7 +292,8 @@ public final class TokenManagement implements Model {
           dummy_key,
           prompt_tokens,
           completion_tokens,
-          total_tokens);
+          total_tokens,
+          image_generations);
     }
     
     @Override
@@ -333,6 +349,12 @@ public final class TokenManagement implements Model {
         return this;
     }
     
+    @Override
+     public BuildStep imageGenerations(Integer imageGenerations) {
+        this.image_generations = imageGenerations;
+        return this;
+    }
+    
     /**
      * @param id id
      * @return Current Builder instance, for fluent method chaining
@@ -345,8 +367,8 @@ public final class TokenManagement implements Model {
   
 
   public final class CopyOfBuilder extends Builder {
-    private CopyOfBuilder(String id, String userId, String email, String identityId, Boolean unlimited, String dummyKey, Integer promptTokens, Integer completionTokens, Integer totalTokens) {
-      super(id, user_id, email, identity_id, unlimited, dummy_key, prompt_tokens, completion_tokens, total_tokens);
+    private CopyOfBuilder(String id, String userId, String email, String identityId, Boolean unlimited, String dummyKey, Integer promptTokens, Integer completionTokens, Integer totalTokens, Integer imageGenerations) {
+      super(id, user_id, email, identity_id, unlimited, dummy_key, prompt_tokens, completion_tokens, total_tokens, image_generations);
       Objects.requireNonNull(identity_id);
       Objects.requireNonNull(unlimited);
       Objects.requireNonNull(prompt_tokens);
@@ -392,6 +414,11 @@ public final class TokenManagement implements Model {
     @Override
      public CopyOfBuilder dummyKey(String dummyKey) {
       return (CopyOfBuilder) super.dummyKey(dummyKey);
+    }
+    
+    @Override
+     public CopyOfBuilder imageGenerations(Integer imageGenerations) {
+      return (CopyOfBuilder) super.imageGenerations(imageGenerations);
     }
   }
   

@@ -283,7 +283,8 @@ class AstraViewModel @Inject constructor(
                 saveTokenManagement(
                     response.usage?.promptTokens,
                     response.usage?.completionTokens,
-                    response.usage?.totalTokens
+                    response.usage?.totalTokens,
+                    null
                 )
 
                 Log.d("GPT RESPONSE ID", response.id)
@@ -339,6 +340,12 @@ class AstraViewModel @Inject constructor(
                     }
 
                     insertOrUpdateChatHistoryDb()
+                    saveTokenManagement(
+                        null,
+                        null,
+                        null,
+                        1
+                    )
                 } catch (e: Exception) {
                     Log.e("Error", e.message.toString())
                 }
@@ -392,6 +399,12 @@ class AstraViewModel @Inject constructor(
                     }
 
                     insertOrUpdateChatHistoryDb()
+                    saveTokenManagement(
+                        null,
+                        null,
+                        null,
+                        1
+                    )
                 } catch (e: Exception) {
                     Log.e("Error", e.message.toString())
                 }
@@ -1015,7 +1028,8 @@ class AstraViewModel @Inject constructor(
     private fun saveTokenManagement(
         promptTokens: Int?,
         completionTokens: Int?,
-        totalTokens: Int?
+        totalTokens: Int?,
+        imageGenerations: Int?
     ) {
         viewModelScope.launch {
             val remoteTokenIdentityId = tokenManagement.value?.identityId ?: ""
@@ -1024,10 +1038,12 @@ class AstraViewModel @Inject constructor(
             val currentTokenPrompt = tokenManagement.value?.promptTokens ?: 0
             val currentTokenCompletion = tokenManagement.value?.completionTokens ?: 0
             val currentTokenTotal = tokenManagement.value?.totalTokens ?: 0
+            val currentImageGenerations = tokenManagement.value?.imageGenerations ?: 0
 
             val newPromptCount = currentTokenPrompt.plus((promptTokens ?: 0))
             val newCompletionCount = currentTokenCompletion.plus((completionTokens ?: 0))
             val newTotalCount = currentTokenTotal.plus((totalTokens ?: 0))
+            val newImageGenerationsCount = currentImageGenerations.plus((imageGenerations ?: 0))
 
             val tokenManagementData = TokenManagement.builder()
                 .identityId(identity.value ?: "")
@@ -1035,6 +1051,7 @@ class AstraViewModel @Inject constructor(
                 .promptTokens(newPromptCount)
                 .completionTokens(newCompletionCount)
                 .totalTokens(newTotalCount)
+                .imageGenerations(newImageGenerationsCount)
                 .userId(currentUserId.value ?: "")
                 .email(userName.value)
                 .build()

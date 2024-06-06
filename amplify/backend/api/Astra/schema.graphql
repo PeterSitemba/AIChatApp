@@ -8,6 +8,7 @@ type TokenManagement @model @auth(rules: [{allow: public}]) {
   prompt_tokens: Int!
   completion_tokens: Int!
   total_tokens: Int!
+  image_generations: Int
 }
 
 type Suggestions @model @auth(rules: [{allow: public}]) {

@@ -258,6 +258,7 @@ class AstraRepo @Inject constructor(
                     .promptTokens(tokenManagement.promptTokens)
                     .completionTokens(tokenManagement.completionTokens)
                     .totalTokens(tokenManagement.totalTokens)
+                    .imageGenerations(tokenManagement.imageGenerations)
                     .build()
             }
             .onEach { Amplify.DataStore.save(it) }
