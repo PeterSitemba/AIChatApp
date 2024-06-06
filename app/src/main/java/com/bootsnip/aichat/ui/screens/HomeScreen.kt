@@ -87,6 +87,7 @@ fun HomeScreen(
     val errorList = viewModel.errorChatList.collectAsStateWithLifecycle().value
     val suggestions = viewModel.suggestions.collectAsStateWithLifecycle().value
     val isImagePrompt = viewModel.isImagePrompt.collectAsStateWithLifecycle().value
+    val isImageVariationsEnabled = viewModel.isImageVariationsEnabled.collectAsStateWithLifecycle().value
 
     val listState = rememberLazyListState()
     val interactionSource = remember { MutableInteractionSource() }
@@ -302,7 +303,8 @@ fun HomeScreen(
                                             }
                                         }
                                     },
-                                    enabledVariationButton = !isLoading
+                                    enabledVariationButton = !isLoading,
+                                    variationButtonVisible = isImageVariationsEnabled
                                 )
                             }
                         }

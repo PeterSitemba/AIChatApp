@@ -28,6 +28,7 @@ import static com.amplifyframework.core.model.query.predicate.QueryField.field;
 public final class TokenManagement implements Model {
   public static final QueryField ID = field("TokenManagement", "id");
   public static final QueryField USER_ID = field("TokenManagement", "user_id");
+  public static final QueryField EMAIL = field("TokenManagement", "email");
   public static final QueryField IDENTITY_ID = field("TokenManagement", "identity_id");
   public static final QueryField UNLIMITED = field("TokenManagement", "unlimited");
   public static final QueryField DUMMY_KEY = field("TokenManagement", "dummy_key");
@@ -36,6 +37,7 @@ public final class TokenManagement implements Model {
   public static final QueryField TOTAL_TOKENS = field("TokenManagement", "total_tokens");
   private final @ModelField(targetType="ID", isRequired = true) String id;
   private final @ModelField(targetType="String") String user_id;
+  private final @ModelField(targetType="AWSEmail") String email;
   private final @ModelField(targetType="String", isRequired = true) String identity_id;
   private final @ModelField(targetType="Boolean", isRequired = true) Boolean unlimited;
   private final @ModelField(targetType="String") String dummy_key;
@@ -56,6 +58,10 @@ public final class TokenManagement implements Model {
   
   public String getUserId() {
       return user_id;
+  }
+  
+  public String getEmail() {
+      return email;
   }
   
   public String getIdentityId() {
@@ -90,9 +96,10 @@ public final class TokenManagement implements Model {
       return updatedAt;
   }
   
-  private TokenManagement(String id, String user_id, String identity_id, Boolean unlimited, String dummy_key, Integer prompt_tokens, Integer completion_tokens, Integer total_tokens) {
+  private TokenManagement(String id, String user_id, String email, String identity_id, Boolean unlimited, String dummy_key, Integer prompt_tokens, Integer completion_tokens, Integer total_tokens) {
     this.id = id;
     this.user_id = user_id;
+    this.email = email;
     this.identity_id = identity_id;
     this.unlimited = unlimited;
     this.dummy_key = dummy_key;
@@ -111,6 +118,7 @@ public final class TokenManagement implements Model {
       TokenManagement tokenManagement = (TokenManagement) obj;
       return ObjectsCompat.equals(getId(), tokenManagement.getId()) &&
               ObjectsCompat.equals(getUserId(), tokenManagement.getUserId()) &&
+              ObjectsCompat.equals(getEmail(), tokenManagement.getEmail()) &&
               ObjectsCompat.equals(getIdentityId(), tokenManagement.getIdentityId()) &&
               ObjectsCompat.equals(getUnlimited(), tokenManagement.getUnlimited()) &&
               ObjectsCompat.equals(getDummyKey(), tokenManagement.getDummyKey()) &&
@@ -127,6 +135,7 @@ public final class TokenManagement implements Model {
     return new StringBuilder()
       .append(getId())
       .append(getUserId())
+      .append(getEmail())
       .append(getIdentityId())
       .append(getUnlimited())
       .append(getDummyKey())
@@ -145,6 +154,7 @@ public final class TokenManagement implements Model {
       .append("TokenManagement {")
       .append("id=" + String.valueOf(getId()) + ", ")
       .append("user_id=" + String.valueOf(getUserId()) + ", ")
+      .append("email=" + String.valueOf(getEmail()) + ", ")
       .append("identity_id=" + String.valueOf(getIdentityId()) + ", ")
       .append("unlimited=" + String.valueOf(getUnlimited()) + ", ")
       .append("dummy_key=" + String.valueOf(getDummyKey()) + ", ")
@@ -178,6 +188,7 @@ public final class TokenManagement implements Model {
       null,
       null,
       null,
+      null,
       null
     );
   }
@@ -185,6 +196,7 @@ public final class TokenManagement implements Model {
   public CopyOfBuilder copyOfBuilder() {
     return new CopyOfBuilder(id,
       user_id,
+      email,
       identity_id,
       unlimited,
       dummy_key,
@@ -221,6 +233,7 @@ public final class TokenManagement implements Model {
     TokenManagement build();
     BuildStep id(String id);
     BuildStep userId(String userId);
+    BuildStep email(String email);
     BuildStep dummyKey(String dummyKey);
   }
   
@@ -233,14 +246,16 @@ public final class TokenManagement implements Model {
     private Integer completion_tokens;
     private Integer total_tokens;
     private String user_id;
+    private String email;
     private String dummy_key;
     public Builder() {
       
     }
     
-    private Builder(String id, String user_id, String identity_id, Boolean unlimited, String dummy_key, Integer prompt_tokens, Integer completion_tokens, Integer total_tokens) {
+    private Builder(String id, String user_id, String email, String identity_id, Boolean unlimited, String dummy_key, Integer prompt_tokens, Integer completion_tokens, Integer total_tokens) {
       this.id = id;
       this.user_id = user_id;
+      this.email = email;
       this.identity_id = identity_id;
       this.unlimited = unlimited;
       this.dummy_key = dummy_key;
@@ -256,6 +271,7 @@ public final class TokenManagement implements Model {
         return new TokenManagement(
           id,
           user_id,
+          email,
           identity_id,
           unlimited,
           dummy_key,
@@ -306,6 +322,12 @@ public final class TokenManagement implements Model {
     }
     
     @Override
+     public BuildStep email(String email) {
+        this.email = email;
+        return this;
+    }
+    
+    @Override
      public BuildStep dummyKey(String dummyKey) {
         this.dummy_key = dummyKey;
         return this;
@@ -323,8 +345,8 @@ public final class TokenManagement implements Model {
   
 
   public final class CopyOfBuilder extends Builder {
-    private CopyOfBuilder(String id, String userId, String identityId, Boolean unlimited, String dummyKey, Integer promptTokens, Integer completionTokens, Integer totalTokens) {
-      super(id, user_id, identity_id, unlimited, dummy_key, prompt_tokens, completion_tokens, total_tokens);
+    private CopyOfBuilder(String id, String userId, String email, String identityId, Boolean unlimited, String dummyKey, Integer promptTokens, Integer completionTokens, Integer totalTokens) {
+      super(id, user_id, email, identity_id, unlimited, dummy_key, prompt_tokens, completion_tokens, total_tokens);
       Objects.requireNonNull(identity_id);
       Objects.requireNonNull(unlimited);
       Objects.requireNonNull(prompt_tokens);
@@ -360,6 +382,11 @@ public final class TokenManagement implements Model {
     @Override
      public CopyOfBuilder userId(String userId) {
       return (CopyOfBuilder) super.userId(userId);
+    }
+    
+    @Override
+     public CopyOfBuilder email(String email) {
+      return (CopyOfBuilder) super.email(email);
     }
     
     @Override

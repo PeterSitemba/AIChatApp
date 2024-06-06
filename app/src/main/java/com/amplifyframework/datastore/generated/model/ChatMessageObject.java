@@ -10,6 +10,7 @@ import java.util.List;
 public final class ChatMessageObject {
   private final String role;
   private final String content;
+  private final Boolean is_image_prompt;
   public String getRole() {
       return role;
   }
@@ -18,9 +19,14 @@ public final class ChatMessageObject {
       return content;
   }
   
-  private ChatMessageObject(String role, String content) {
+  public Boolean getIsImagePrompt() {
+      return is_image_prompt;
+  }
+  
+  private ChatMessageObject(String role, String content, Boolean is_image_prompt) {
     this.role = role;
     this.content = content;
+    this.is_image_prompt = is_image_prompt;
   }
   
   @Override
@@ -32,7 +38,8 @@ public final class ChatMessageObject {
       } else {
       ChatMessageObject chatMessageObject = (ChatMessageObject) obj;
       return ObjectsCompat.equals(getRole(), chatMessageObject.getRole()) &&
-              ObjectsCompat.equals(getContent(), chatMessageObject.getContent());
+              ObjectsCompat.equals(getContent(), chatMessageObject.getContent()) &&
+              ObjectsCompat.equals(getIsImagePrompt(), chatMessageObject.getIsImagePrompt());
       }
   }
   
@@ -41,6 +48,7 @@ public final class ChatMessageObject {
     return new StringBuilder()
       .append(getRole())
       .append(getContent())
+      .append(getIsImagePrompt())
       .toString()
       .hashCode();
   }
@@ -51,7 +59,8 @@ public final class ChatMessageObject {
   
   public CopyOfBuilder copyOfBuilder() {
     return new CopyOfBuilder(role,
-      content);
+      content,
+      is_image_prompt);
   }
   public interface RoleStep {
     ContentStep role(String role);
@@ -65,19 +74,22 @@ public final class ChatMessageObject {
 
   public interface BuildStep {
     ChatMessageObject build();
+    BuildStep isImagePrompt(Boolean isImagePrompt);
   }
   
 
   public static class Builder implements RoleStep, ContentStep, BuildStep {
     private String role;
     private String content;
+    private Boolean is_image_prompt;
     public Builder() {
       
     }
     
-    private Builder(String role, String content) {
+    private Builder(String role, String content, Boolean is_image_prompt) {
       this.role = role;
       this.content = content;
+      this.is_image_prompt = is_image_prompt;
     }
     
     @Override
@@ -85,7 +97,8 @@ public final class ChatMessageObject {
         
         return new ChatMessageObject(
           role,
-          content);
+          content,
+          is_image_prompt);
     }
     
     @Override
@@ -101,12 +114,18 @@ public final class ChatMessageObject {
         this.content = content;
         return this;
     }
+    
+    @Override
+     public BuildStep isImagePrompt(Boolean isImagePrompt) {
+        this.is_image_prompt = isImagePrompt;
+        return this;
+    }
   }
   
 
   public final class CopyOfBuilder extends Builder {
-    private CopyOfBuilder(String role, String content) {
-      super(role, content);
+    private CopyOfBuilder(String role, String content, Boolean isImagePrompt) {
+      super(role, content, is_image_prompt);
       Objects.requireNonNull(role);
       Objects.requireNonNull(content);
     }
@@ -119,6 +138,11 @@ public final class ChatMessageObject {
     @Override
      public CopyOfBuilder content(String content) {
       return (CopyOfBuilder) super.content(content);
+    }
+    
+    @Override
+     public CopyOfBuilder isImagePrompt(Boolean isImagePrompt) {
+      return (CopyOfBuilder) super.isImagePrompt(isImagePrompt);
     }
   }
   

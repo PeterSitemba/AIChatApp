@@ -29,9 +29,11 @@ public final class OpenAi implements Model {
   public static final QueryField ID = field("OpenAi", "id");
   public static final QueryField OPEN_AI = field("OpenAi", "open_ai");
   public static final QueryField TOKEN_COUNT = field("OpenAi", "token_count");
+  public static final QueryField ENABLE_IMAGE_VARIATIONS = field("OpenAi", "enable_image_variations");
   private final @ModelField(targetType="ID", isRequired = true) String id;
   private final @ModelField(targetType="String", isRequired = true) String open_ai;
   private final @ModelField(targetType="Int") Integer token_count;
+  private final @ModelField(targetType="Boolean") Boolean enable_image_variations;
   private @ModelField(targetType="AWSDateTime", isReadOnly = true) Temporal.DateTime createdAt;
   private @ModelField(targetType="AWSDateTime", isReadOnly = true) Temporal.DateTime updatedAt;
   /** @deprecated This API is internal to Amplify and should not be used. */
@@ -52,6 +54,10 @@ public final class OpenAi implements Model {
       return token_count;
   }
   
+  public Boolean getEnableImageVariations() {
+      return enable_image_variations;
+  }
+  
   public Temporal.DateTime getCreatedAt() {
       return createdAt;
   }
@@ -60,10 +66,11 @@ public final class OpenAi implements Model {
       return updatedAt;
   }
   
-  private OpenAi(String id, String open_ai, Integer token_count) {
+  private OpenAi(String id, String open_ai, Integer token_count, Boolean enable_image_variations) {
     this.id = id;
     this.open_ai = open_ai;
     this.token_count = token_count;
+    this.enable_image_variations = enable_image_variations;
   }
   
   @Override
@@ -77,6 +84,7 @@ public final class OpenAi implements Model {
       return ObjectsCompat.equals(getId(), openAi.getId()) &&
               ObjectsCompat.equals(getOpenAi(), openAi.getOpenAi()) &&
               ObjectsCompat.equals(getTokenCount(), openAi.getTokenCount()) &&
+              ObjectsCompat.equals(getEnableImageVariations(), openAi.getEnableImageVariations()) &&
               ObjectsCompat.equals(getCreatedAt(), openAi.getCreatedAt()) &&
               ObjectsCompat.equals(getUpdatedAt(), openAi.getUpdatedAt());
       }
@@ -88,6 +96,7 @@ public final class OpenAi implements Model {
       .append(getId())
       .append(getOpenAi())
       .append(getTokenCount())
+      .append(getEnableImageVariations())
       .append(getCreatedAt())
       .append(getUpdatedAt())
       .toString()
@@ -101,6 +110,7 @@ public final class OpenAi implements Model {
       .append("id=" + String.valueOf(getId()) + ", ")
       .append("open_ai=" + String.valueOf(getOpenAi()) + ", ")
       .append("token_count=" + String.valueOf(getTokenCount()) + ", ")
+      .append("enable_image_variations=" + String.valueOf(getEnableImageVariations()) + ", ")
       .append("createdAt=" + String.valueOf(getCreatedAt()) + ", ")
       .append("updatedAt=" + String.valueOf(getUpdatedAt()))
       .append("}")
@@ -123,6 +133,7 @@ public final class OpenAi implements Model {
     return new OpenAi(
       id,
       null,
+      null,
       null
     );
   }
@@ -130,7 +141,8 @@ public final class OpenAi implements Model {
   public CopyOfBuilder copyOfBuilder() {
     return new CopyOfBuilder(id,
       open_ai,
-      token_count);
+      token_count,
+      enable_image_variations);
   }
   public interface OpenAiStep {
     BuildStep openAi(String openAi);
@@ -141,6 +153,7 @@ public final class OpenAi implements Model {
     OpenAi build();
     BuildStep id(String id);
     BuildStep tokenCount(Integer tokenCount);
+    BuildStep enableImageVariations(Boolean enableImageVariations);
   }
   
 
@@ -148,14 +161,16 @@ public final class OpenAi implements Model {
     private String id;
     private String open_ai;
     private Integer token_count;
+    private Boolean enable_image_variations;
     public Builder() {
       
     }
     
-    private Builder(String id, String open_ai, Integer token_count) {
+    private Builder(String id, String open_ai, Integer token_count, Boolean enable_image_variations) {
       this.id = id;
       this.open_ai = open_ai;
       this.token_count = token_count;
+      this.enable_image_variations = enable_image_variations;
     }
     
     @Override
@@ -165,7 +180,8 @@ public final class OpenAi implements Model {
         return new OpenAi(
           id,
           open_ai,
-          token_count);
+          token_count,
+          enable_image_variations);
     }
     
     @Override
@@ -181,6 +197,12 @@ public final class OpenAi implements Model {
         return this;
     }
     
+    @Override
+     public BuildStep enableImageVariations(Boolean enableImageVariations) {
+        this.enable_image_variations = enableImageVariations;
+        return this;
+    }
+    
     /**
      * @param id id
      * @return Current Builder instance, for fluent method chaining
@@ -193,8 +215,8 @@ public final class OpenAi implements Model {
   
 
   public final class CopyOfBuilder extends Builder {
-    private CopyOfBuilder(String id, String openAi, Integer tokenCount) {
-      super(id, open_ai, token_count);
+    private CopyOfBuilder(String id, String openAi, Integer tokenCount, Boolean enableImageVariations) {
+      super(id, open_ai, token_count, enable_image_variations);
       Objects.requireNonNull(open_ai);
     }
     
@@ -206,6 +228,11 @@ public final class OpenAi implements Model {
     @Override
      public CopyOfBuilder tokenCount(Integer tokenCount) {
       return (CopyOfBuilder) super.tokenCount(tokenCount);
+    }
+    
+    @Override
+     public CopyOfBuilder enableImageVariations(Boolean enableImageVariations) {
+      return (CopyOfBuilder) super.enableImageVariations(enableImageVariations);
     }
   }
   

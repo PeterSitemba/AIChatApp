@@ -32,7 +32,6 @@ import com.bootsnip.aichat.db.ChatHistoryUpdateFav
 import com.bootsnip.aichat.db.TokensUpdate
 import com.bootsnip.aichat.model.AstraChatMessage
 import com.bootsnip.aichat.repo.IAstraRepo
-import com.bootsnip.aichat.util.AssistantType
 import com.bootsnip.aichat.util.DateUtil
 import com.bootsnip.aichat.util.saveImageAndRetrieveUri
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -156,6 +155,8 @@ class AstraViewModel @Inject constructor(
     private val _suggestions: MutableStateFlow<MutableList<Suggestions>> =
         MutableStateFlow(mutableListOf())
     val suggestions = _suggestions.asStateFlow()
+
+    val isImageVariationsEnabled: MutableStateFlow<Boolean> = MutableStateFlow(false)
 
     init {
         getDatastoreModelEvent()
@@ -356,7 +357,7 @@ class AstraViewModel @Inject constructor(
                 try {
                     val imageVariation = ImageVariation(
                         image = FileSource(name = fileName, source = inputStream.source()),
-                        model = ModelId("dall-e-2"),
+                        model = ModelId(selectedGPTLLM.value?.llmVersion ?: "dall-e-2"),
                         n = 1,
                         size = ImageSize.is1024x1024
                     )
@@ -411,6 +412,7 @@ class AstraViewModel @Inject constructor(
                     if (isDummyKeyAvailable.value) return@collect
                     openAiAuth.value = it.openAi
                     remoteTokensCount.value = it.tokenCount
+                    isImageVariationsEnabled.value = it.enableImageVariations
                     updateTokensFromRemote()
                 }
         }
@@ -422,15 +424,15 @@ class AstraViewModel @Inject constructor(
             val gptVersion = repo.queryGPTLLMs()
 
             gptVersion
-                .catch { Log.e("GPT LLM List", "Error querying GPT LLM List", it) }
+                .catch { Log.e("GPT LLM List Query", "Error querying GPT LLM List", it) }
                 .collect {
-                    Log.i("GPT LLM List", "llm ${it.llmVersion}")
+                    Log.i("GPT LLM List Query", "llm ${it.llmVersion}")
                     list.add(it)
                 }
 
             _gptLLMs.value.clear()
             _gptLLMs.value = list
-            _selectedGPTLLM.value = gptLLMs.value.firstOrNull()
+            _selectedGPTLLM.value = list.sortedBy { it.sortOrder }.firstOrNull()
         }
     }
 
@@ -445,6 +447,7 @@ class AstraViewModel @Inject constructor(
                         if (isDummyKeyAvailable.value) return@collect
                         openAiAuth.value = it.items.first().openAi
                         remoteTokensCount.value = it.items.first().tokenCount
+                        isImageVariationsEnabled.value = it.items.first().enableImageVariations
                         updateTokensFromRemote()
                     } catch (e: Exception) {
                         Log.e("OpenAI KEY", e.message.toString())
@@ -459,10 +462,10 @@ class AstraViewModel @Inject constructor(
             val gptVersion = repo.observeGPTLLMs()
 
             gptVersion
-                .catch { Log.e("GPT LLM List", "Error observing GPT LLM List", it) }
+                .catch { Log.e("GPT LLM List Observe", "Error observing GPT LLM List", it) }
                 .collect {
                     try {
-                        Log.i("GPT LLM List", "key ${it.items}")
+                        Log.i("GPT LLM List Observer", "key ${it.items}")
                         list.addAll(it.items)
                         _gptLLMs.value.clear()
                         _gptLLMs.value = list
@@ -512,7 +515,7 @@ class AstraViewModel @Inject constructor(
             updateChatHistory(chatHistoryUpdate)
         } else {
             val chatHistory = ChatHistory(
-                assistantType = AssistantType.GPT35TURBO.assistantType,
+                assistantType = selectedGPTLLM.value?.llmVersion ?: "gpt-3.5-turbo",
                 chatMessageList = chatList,
                 fav = 0,
                 modifiedAt = System.currentTimeMillis()
@@ -753,7 +756,7 @@ class AstraViewModel @Inject constructor(
                 AstraChatMessage(
                     role = ChatRole(it.role),
                     content = it.content,
-                    isImagePrompt = false
+                    isImagePrompt = it.isImagePrompt
                 )
             }
 
@@ -791,9 +794,11 @@ class AstraViewModel @Inject constructor(
                         ChatMessageObject.builder()
                             .role(it.role.role)
                             .content(it.content)
+                            .isImagePrompt(it.isImagePrompt)
                             .build()
                     }
                 )
+                .email(userName.value)
                 .build()
 
             if (chatHistoryRemoteFound != null) {
@@ -900,7 +905,7 @@ class AstraViewModel @Inject constructor(
                     val event = it.data as ModelSyncedEvent
                     if (event.model == "ChatGPTLLMs") {
                         if (event.isFullSync) {
-                            _selectedGPTLLM.value = gptLLMs.value.firstOrNull()
+                            _selectedGPTLLM.value = gptLLMs.value.sortedBy {gptLLM -> gptLLM.sortOrder }.firstOrNull()
                         }
                     }
                     if (event.model == "OpenAi") {
@@ -1031,6 +1036,7 @@ class AstraViewModel @Inject constructor(
                 .completionTokens(newCompletionCount)
                 .totalTokens(newTotalCount)
                 .userId(currentUserId.value ?: "")
+                .email(userName.value)
                 .build()
 
             if (remoteTokenUserId.isNotEmpty() || remoteTokenIdentityId.isNotEmpty()) {

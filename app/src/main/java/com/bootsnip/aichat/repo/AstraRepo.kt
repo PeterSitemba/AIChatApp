@@ -252,6 +252,7 @@ class AstraRepo @Inject constructor(
             .map {
                 it.copyOfBuilder()
                     .userId(tokenManagement.userId)
+                    .email(tokenManagement.email)
                     .identityId(tokenManagement.identityId)
                     .unlimited(tokenManagement.unlimited)
                     .promptTokens(tokenManagement.promptTokens)
@@ -334,6 +335,7 @@ class AstraRepo @Inject constructor(
                     .assistantType(chatHistoryRemote.assistantType)
                     .chatMessageList(chatHistoryRemote.chatMessageList)
                     .userId(chatHistoryRemote.userId)
+                    .email(chatHistoryRemote.email)
                     .fav(chatHistoryRemote.fav)
                     .localDbId(chatHistoryRemote.localDbId)
                     .build()

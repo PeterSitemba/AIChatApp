@@ -126,4 +126,7 @@ dependencies {
 
     //coil
     implementation(libs.coil)
+
+    //permissions
+    implementation(libs.accompanist.permissions)
 }

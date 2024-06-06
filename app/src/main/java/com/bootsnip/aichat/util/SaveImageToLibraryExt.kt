@@ -12,7 +12,7 @@ import java.io.*
 
 
 fun Bitmap.saveImageAndRetrieveUri(context: Context): String {
-    val filename = "ASTRAIMG:${System.currentTimeMillis()}.png"
+    val filename = "ASTRAIMG${System.currentTimeMillis()}.png"
     var fos: OutputStream? = null
     var filePath = ""
     context.contentResolver?.also { resolver ->

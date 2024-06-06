@@ -1,8 +1,13 @@
 package com.bootsnip.aichat.navigation
 
+import android.Manifest
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -21,6 +26,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -38,6 +44,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
@@ -52,7 +59,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat.startActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -74,13 +85,19 @@ import com.bootsnip.aichat.ui.screens.PurchaseSubscriptionScreen
 import com.bootsnip.aichat.ui.screens.TextSelectionScreen
 import com.bootsnip.aichat.ui.theme.DarkGrey
 import com.bootsnip.aichat.viewmodel.AstraViewModel
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.MultiplePermissionsState
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.shouldShowRationale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 const val CLOSE_DRAWER = "close_drawer"
 const val UID = "uid"
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun AstraNavGraph(
     modifier: Modifier = Modifier,
@@ -194,6 +211,41 @@ fun AstraNavGraph(
         ProgressDialog()
     }
 
+
+    val showRationalDialog = remember { mutableStateOf(false) }
+
+    val readMediaImagesPermission = rememberPermissionState(
+        permission = Manifest.permission.READ_MEDIA_IMAGES
+    )
+
+    val multiplePermission = rememberMultiplePermissionsState(
+        permissions = listOf(
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        )
+    )
+
+
+    if (showRationalDialog.value) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Api33PermissionRequester(
+                rationalDialog = showRationalDialog.value,
+                showRationalDialog = {
+                    showRationalDialog.value = it
+                }
+            )
+        } else {
+            Api32AndBelowPermissionRequester(
+                multiplePermission = multiplePermission,
+                rationalDialog = showRationalDialog.value,
+                showRationalDialog = {
+                    showRationalDialog.value = it
+                }
+            )
+        }
+    }
+
+
     ModalNavigationDrawer(
         drawerContent = {
             if (currentRoute != AllDestinations.AUTHENTICATION) {
@@ -251,7 +303,9 @@ fun AstraNavGraph(
                                             end = 4.dp
                                         ),
                                         colors = buttonColors,
-                                        modifier = Modifier.width(170.dp).menuAnchor()
+                                        modifier = Modifier
+                                            .width(170.dp)
+                                            .menuAnchor()
                                     ) {
                                         Text(text = selectedGPTLLM?.displayName ?: "GPT - 3.5")
 
@@ -263,15 +317,57 @@ fun AstraNavGraph(
                                     GPTDropDownList(
                                         llmList = gptList,
                                         expanded = showDropDown,
-                                        unlimited = tokenLocal.firstOrNull()?.unlimited ?: false,
+                                        unlimited = tokenLocal.firstOrNull()?.unlimited
+                                            ?: false,
                                         showDropDown = { showDropDown = it },
                                         selectedLLM = { selectedLLM, subscribed ->
                                             val isUnlimited =
                                                 tokenLocal.firstOrNull()?.unlimited ?: false
-                                            if (isUnlimited) {
-                                                viewModel.setSelectedLLM(selectedLLM)
+
+                                            val selectLLM = gptList.find { it.llmVersion == selectedLLM }
+
+                                            val isImageLLM = selectLLM?.llmVersion?.startsWith("dall-e") ?: false
+
+                                            if(isImageLLM) {
+                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                                    if (!readMediaImagesPermission.status.isGranted) {
+                                                        if (readMediaImagesPermission.status.shouldShowRationale) {
+                                                            showRationalDialog.value = true
+                                                        } else {
+                                                            readMediaImagesPermission.launchPermissionRequest()
+                                                        }
+                                                    } else {
+                                                        setSelectedLLM(
+                                                            viewModel = viewModel,
+                                                            isUnlimited = isUnlimited,
+                                                            selectedLLM = selectedLLM,
+                                                            subscribed = subscribed
+                                                        )
+                                                    }
+                                                } else {
+                                                    if (!multiplePermission.allPermissionsGranted) {
+                                                        if (multiplePermission.shouldShowRationale) {
+                                                            showRationalDialog.value = true
+                                                        } else {
+                                                            multiplePermission.launchMultiplePermissionRequest()
+                                                        }
+                                                    } else {
+                                                        setSelectedLLM(
+                                                            viewModel = viewModel,
+                                                            isUnlimited = isUnlimited,
+                                                            selectedLLM = selectedLLM,
+                                                            subscribed = subscribed
+                                                        )
+                                                    }
+                                                }
+
                                             } else {
-                                                viewModel.showPurchaseScreen.value = subscribed
+                                                setSelectedLLM(
+                                                    viewModel = viewModel,
+                                                    isUnlimited = isUnlimited,
+                                                    selectedLLM = selectedLLM,
+                                                    subscribed = subscribed
+                                                )
                                             }
                                         },
                                         modifier = Modifier.width(170.dp)
@@ -290,7 +386,8 @@ fun AstraNavGraph(
                                     coroutineScope.launch { drawerState.open() }
                                 }, content = {
                                     Icon(
-                                        imageVector = Icons.Default.Menu, contentDescription = null
+                                        imageVector = Icons.Default.Menu,
+                                        contentDescription = null
                                     )
                                 })
 
@@ -555,5 +652,133 @@ fun AstraNavGraph(
 
             }
         }
+    }
+}
+
+private fun setSelectedLLM(
+    viewModel: AstraViewModel,
+    isUnlimited: Boolean,
+    selectedLLM: String,
+    subscribed: Boolean
+) {
+    if (isUnlimited) {
+        viewModel.setSelectedLLM(selectedLLM)
+    } else {
+        viewModel.showPurchaseScreen.value = subscribed
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@Composable
+fun Api33PermissionRequester(
+    rationalDialog: Boolean,
+    showRationalDialog: (Boolean) -> Unit
+) {
+
+    val context = LocalContext.current
+
+    if (rationalDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showRationalDialog(false)
+            },
+            title = {
+                Text(
+                    text = "Permission",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            },
+            text = {
+                Text(
+                    "We need read media permissions to enable image generation. Please grant the permission.",
+                    fontSize = 16.sp
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showRationalDialog(false)
+                        val intent = Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.fromParts("package", context.packageName, null)
+                        )
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(context, intent, null)
+
+                    }) {
+                    Text("OK", style = TextStyle(color = Color.White))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showRationalDialog(false)
+                    }) {
+                    Text("Cancel", style = TextStyle(color = Color.White))
+                }
+            },
+        )
+    }
+}
+
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+fun Api32AndBelowPermissionRequester(
+    multiplePermission: MultiplePermissionsState,
+    rationalDialog: Boolean,
+    showRationalDialog: (Boolean) -> Unit
+) {
+
+    val context = LocalContext.current
+
+    if (rationalDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showRationalDialog(false)
+            },
+            title = {
+                Text(
+                    text = "Permission",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            },
+            text = {
+                Text(
+                    if (multiplePermission.revokedPermissions.size == 2) {
+                        "We need read and write permission to generate images. Please grant the permission."
+                    } else if (multiplePermission.revokedPermissions.first().permission == Manifest.permission.WRITE_EXTERNAL_STORAGE) {
+                        "We need write permission to generate images. Please grant the permission."
+                    } else {
+                        "We need read permission to generate images. Please grant the permission."
+                    },
+                    fontSize = 16.sp
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showRationalDialog(false)
+                        val intent = Intent(
+                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.fromParts("package", context.packageName, null)
+                        )
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(context, intent, null)
+
+                    }) {
+                    Text("OK", style = TextStyle(color = Color.Black))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showRationalDialog(false)
+                    }) {
+                    Text("Cancel", style = TextStyle(color = Color.Black))
+                }
+            },
+        )
     }
 }

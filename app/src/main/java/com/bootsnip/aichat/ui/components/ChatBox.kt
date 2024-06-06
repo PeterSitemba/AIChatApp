@@ -51,7 +51,7 @@ fun AiChatBox(
     modifier: Modifier,
     onCreateVariationClicked: () -> Unit = {},
     enabledVariationButton: Boolean = true,
-    variationButtonVisible: Boolean = true
+    variationButtonVisible: Boolean
 ) {
 
     val context = LocalContext.current
