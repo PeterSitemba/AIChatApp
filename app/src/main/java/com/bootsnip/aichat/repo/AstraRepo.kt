@@ -23,6 +23,7 @@ import com.amplifyframework.datastore.generated.model.ChatGPTLLMs
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.OpenAi
 import com.amplifyframework.datastore.generated.model.Suggestions
+import com.amplifyframework.datastore.generated.model.TestProUserManagement
 import com.amplifyframework.datastore.generated.model.TokenManagement
 import com.amplifyframework.hub.HubChannel
 import com.amplifyframework.hub.HubEvent
@@ -323,6 +324,22 @@ class AstraRepo @Inject constructor(
     override suspend fun observeSuggestions(): Flow<DataStoreItemChange<Suggestions>> =
         withContext(ioDispatcher) {
             Amplify.DataStore.observe(Suggestions::class)
+        }
+
+    override suspend fun queryProUserTestManagement(userId: String): Flow<TestProUserManagement> =
+        withContext(ioDispatcher) {
+            Amplify.DataStore.query(
+                TestProUserManagement::class,
+                Where.matches(TestProUserManagement.USER_ID.eq(userId))
+            )
+        }
+
+    override suspend fun observeProUserTestManagement(userId: String): Flow<DataStoreItemChange<TestProUserManagement>> =
+        withContext(ioDispatcher) {
+            Amplify.DataStore.observe(
+                TestProUserManagement::class,
+                TestProUserManagement.USER_ID.eq(userId)
+            )
         }
 
     override suspend fun updateChatHistoryRemote(chatHistoryRemote: ChatHistoryRemote) {

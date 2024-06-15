@@ -15,6 +15,7 @@ import com.amplifyframework.datastore.generated.model.ChatGPTLLMs
 import com.amplifyframework.datastore.generated.model.ChatHistoryRemote
 import com.amplifyframework.datastore.generated.model.OpenAi
 import com.amplifyframework.datastore.generated.model.Suggestions
+import com.amplifyframework.datastore.generated.model.TestProUserManagement
 import com.amplifyframework.datastore.generated.model.TokenManagement
 import com.amplifyframework.hub.HubEvent
 import com.bootsnip.aichat.db.ChatHistory
@@ -100,5 +101,9 @@ interface IAstraRepo {
     suspend fun querySuggestions(): Flow<Suggestions>
 
     suspend fun observeSuggestions(): Flow<DataStoreItemChange<Suggestions>>
+
+    suspend fun queryProUserTestManagement(userId: String): Flow<TestProUserManagement>
+
+    suspend fun observeProUserTestManagement(userId: String): Flow<DataStoreItemChange<TestProUserManagement>>
 
 }

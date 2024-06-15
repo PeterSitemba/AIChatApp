@@ -1,3 +1,10 @@
+type TestProUserManagement @model @auth(rules: [{allow: public}]) {
+  id: ID!
+  user_id: String
+  email: AWSEmail
+  enabled: Boolean
+}
+
 type TokenManagement @model @auth(rules: [{allow: public}]) {
   id: ID!
   user_id: String

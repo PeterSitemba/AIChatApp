@@ -316,15 +316,17 @@ class AstraViewModel @Inject constructor(
                     val url = response.firstOrNull()?.url
 
                     val loader = ImageLoader(getApplication<Application>().applicationContext)
-                    val request = ImageRequest.Builder(getApplication<Application>().applicationContext)
-                        .data(url)
-                        .allowHardware(false)
-                        .build()
+                    val request =
+                        ImageRequest.Builder(getApplication<Application>().applicationContext)
+                            .data(url)
+                            .allowHardware(false)
+                            .build()
                     val result =
                         (loader.execute(request) as SuccessResult).drawable
                     val bitmap = (result as BitmapDrawable).bitmap
 
-                    val uri = bitmap.saveImageAndRetrieveUri(getApplication<Application>().applicationContext)
+                    val uri =
+                        bitmap.saveImageAndRetrieveUri(getApplication<Application>().applicationContext)
 
                     Log.i("FILE PATH", uri)
 
@@ -377,15 +379,17 @@ class AstraViewModel @Inject constructor(
                     val url = response.firstOrNull()?.url
 
                     val loader = ImageLoader(getApplication<Application>().applicationContext)
-                    val request = ImageRequest.Builder(getApplication<Application>().applicationContext)
-                        .data(url)
-                        .allowHardware(false)
-                        .build()
+                    val request =
+                        ImageRequest.Builder(getApplication<Application>().applicationContext)
+                            .data(url)
+                            .allowHardware(false)
+                            .build()
                     val result =
                         (loader.execute(request) as SuccessResult).drawable
                     val bitmap = (result as BitmapDrawable).bitmap
 
-                    val uri = bitmap.saveImageAndRetrieveUri(getApplication<Application>().applicationContext)
+                    val uri =
+                        bitmap.saveImageAndRetrieveUri(getApplication<Application>().applicationContext)
 
                     val newResponseList = chatList.value.toMutableList()
                     chatList.value = newResponseList.apply {
@@ -492,10 +496,11 @@ class AstraViewModel @Inject constructor(
     private fun updateTokensFromRemote() {
         if (tokensLocal.value.isNotEmpty()) {
             val tokenLocal = tokensLocal.value[0]
-            if (tokensCount.value == 3) {
+            if (tokensCount.value == 3 && tokenLocal.usedTokens == 0) {
                 val tokensUpdate = TokensUpdate(
                     tokenLocal.uid,
                     remoteTokensCount.value,
+                    0,
                     false,
                     DateUtil.currentDate()
                 )
@@ -547,6 +552,7 @@ class AstraViewModel @Inject constructor(
     private fun insertFreshToken(unlimited: Boolean = false) {
         val token = com.bootsnip.aichat.db.Tokens(
             remainingCount = remoteTokensCount.value,
+            usedTokens = 0,
             unlimited = unlimited,
             date = DateUtil.currentDate()
         )
@@ -567,6 +573,7 @@ class AstraViewModel @Inject constructor(
                 val tokensUpdate = TokensUpdate(
                     tokenLocal.uid,
                     remoteTokensCount.value,
+                    0,
                     false,
                     DateUtil.currentDate()
                 )
@@ -588,16 +595,40 @@ class AstraViewModel @Inject constructor(
     }
 
     private fun updateLocalTokenAfterQuery() {
-        val tokenLocal = tokensLocal.value[0]
-        if (!tokenLocal.unlimited) {
+        try {
+            val tokenLocal = tokensLocal.value[0]
+            if (!tokenLocal.unlimited) {
+                val tokensUpdate = TokensUpdate(
+                    tokenLocal.uid,
+                    tokenLocal.remainingCount - 1,
+                    tokenLocal.usedTokens + 1,
+                    false,
+                    DateUtil.currentDate()
+                )
+                updateLocalToken(tokensUpdate)
+            }
+        } catch (e: Exception) {
+            Log.e("Error", e.message.toString())
+        }
+
+    }
+
+    private fun updateLocalTokenUnlimitedStatus(enabled: Boolean) {
+        try {
+            val tokenLocal = tokensLocal.value[0]
+
             val tokensUpdate = TokensUpdate(
                 tokenLocal.uid,
-                tokenLocal.remainingCount - 1,
-                false,
+                tokenLocal.remainingCount,
+                tokenLocal.usedTokens,
+                enabled,
                 DateUtil.currentDate()
             )
             updateLocalToken(tokensUpdate)
+        } catch (e: Exception) {
+            Log.e("Error", e.message.toString())
         }
+
     }
 
     private fun updateLocalToken(tokensUpdate: TokensUpdate) {
@@ -691,6 +722,8 @@ class AstraViewModel @Inject constructor(
                 if (isSignedIn.value) {
                     queryTokenManagement()
                     observeTokenManagementChanges()
+                    queryTestProUserManagement()
+                    observeTestProUserManagement()
                 }
             } catch (e: Exception) {
                 Log.e("SignedOut", e.message.toString() + " ${currentUserId.value}")
@@ -918,7 +951,8 @@ class AstraViewModel @Inject constructor(
                     val event = it.data as ModelSyncedEvent
                     if (event.model == "ChatGPTLLMs") {
                         if (event.isFullSync) {
-                            _selectedGPTLLM.value = gptLLMs.value.sortedBy {gptLLM -> gptLLM.sortOrder }.firstOrNull()
+                            _selectedGPTLLM.value =
+                                gptLLMs.value.sortedBy { gptLLM -> gptLLM.sortOrder }.firstOrNull()
                         }
                     }
                     if (event.model == "OpenAi") {
@@ -1019,6 +1053,42 @@ class AstraViewModel @Inject constructor(
 
                     } catch (e: Exception) {
                         Log.e("Token Management", e.message.toString())
+                    }
+                }
+        }
+
+    }
+
+
+    private fun queryTestProUserManagement() {
+        viewModelScope.launch {
+            val response =
+                repo.queryProUserTestManagement(currentUserId.value ?: "")
+
+            response
+                .catch { Log.e("Queried Pro User Test Mgmt", "Error querying pro users", it) }
+                .collect {
+                    try {
+                        updateLocalTokenUnlimitedStatus(it.enabled)
+                    } catch (e: Exception) {
+                        Log.e("Queried Pro User Test Mgmt", e.message.toString())
+                    }
+                }
+        }
+    }
+
+
+    private fun observeTestProUserManagement() {
+        viewModelScope.launch {
+            val openAi =
+                repo.observeProUserTestManagement(currentUserId.value ?: "")
+            openAi
+                .catch { Log.e("Observed Pro User Test Mgmt", "Error observing pro users", it) }
+                .collect {
+                    try {
+                        updateLocalTokenUnlimitedStatus(it.item().enabled)
+                    } catch (e: Exception) {
+                        Log.e("Observed Pro User Test Mgmt", e.message.toString())
                     }
                 }
         }

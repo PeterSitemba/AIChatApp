@@ -1,5 +1,6 @@
 package com.bootsnip.aichat.db
 
+import androidx.annotation.Keep
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -8,6 +9,7 @@ import com.bootsnip.aichat.model.AstraChatMessage
 import java.util.UUID
 
 @Entity(tableName = "chat_history_table")
+@Keep
 data class ChatHistory(
     @PrimaryKey(true)
     val uid: Int? = null,
@@ -23,11 +25,13 @@ data class ChatHistory(
     val modifiedAt: Long
 )
 
+@Keep
 data class ChatHistoryUpdateFav(
     val uid: Int,
     val fav : Int
 )
 
+@Keep
 data class ChatHistoryUpdate(
     val uid: Int?,
     @TypeConverters(Converter::class)
