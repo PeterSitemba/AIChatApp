@@ -54,7 +54,7 @@ fun ChatHistoryListItem(
                     top.linkTo(parent.top)
                     bottom.linkTo(parent.bottom)
                 },
-            painter = painterResource(id = R.drawable.logo),
+            painter = painterResource(id = R.drawable.astra_ai_logo),
             contentDescription = "logo"
         )
 

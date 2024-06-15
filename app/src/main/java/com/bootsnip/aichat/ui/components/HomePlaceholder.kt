@@ -33,7 +33,7 @@ fun HomePlaceholder(
         verticalArrangement = Arrangement.Center
     ) {
         Image(
-            painter = painterResource(id = R.drawable.logo),
+            painter = painterResource(id = R.drawable.astra_ai_logo),
             modifier = Modifier
                 .size(70.dp)
                 .padding(bottom = 8.dp),

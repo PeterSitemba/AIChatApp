@@ -261,7 +261,7 @@ private fun Benefits(
                 modifier = Modifier
                     .padding(end = 16.dp)
                     .size(30.dp),
-                painter = painterResource(id = R.drawable.logo),
+                painter = painterResource(id = R.drawable.astra_ai_logo),
                 contentDescription = "logo"
             )
 

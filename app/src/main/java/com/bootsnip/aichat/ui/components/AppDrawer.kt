@@ -154,7 +154,7 @@ fun DrawerHeader(modifier: Modifier) {
     ) {
 
         Image(
-            painterResource(id = R.drawable.logo),
+            painterResource(id = R.drawable.astra_ai_logo),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = modifier

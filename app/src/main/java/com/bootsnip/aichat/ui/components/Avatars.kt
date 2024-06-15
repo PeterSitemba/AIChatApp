@@ -13,7 +13,7 @@ import com.bootsnip.aichat.R
 @Composable
 fun AiAvatar() {
     Image(
-        painter = painterResource(id = R.drawable.logo),
+        painter = painterResource(id = R.drawable.astra_ai_logo),
         contentDescription = "ai_avatar",
         modifier = Modifier
             .clip(CircleShape)
