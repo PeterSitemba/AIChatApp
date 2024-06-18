@@ -70,7 +70,6 @@ import com.bootsnip.aichat.util.NetworkConnection
 import com.bootsnip.aichat.util.getFileNameAndInputStream
 import com.bootsnip.aichat.viewmodel.AstraViewModel
 import kotlinx.coroutines.launch
-import okhttp3.internal.toImmutableList
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -168,7 +167,7 @@ fun HomeScreen(
                     showNoInternetDialog = true
                 }
             },
-            suggestions = suggestionsToDisplay.map { it.suggestion }.toImmutableList(),
+            suggestions = suggestionsToDisplay.map { it.suggestion },
             isImagePrompt = isImagePrompt
         )
     }

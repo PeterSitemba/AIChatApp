@@ -7,7 +7,6 @@ import com.amplifyframework.api.aws.AWSApiPlugin
 import com.amplifyframework.auth.cognito.AWSCognitoAuthPlugin
 import com.amplifyframework.core.Amplify
 import com.amplifyframework.datastore.AWSDataStorePlugin
-import com.amplifyframework.datastore.generated.model.OpenAi
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
@@ -15,8 +14,8 @@ class AiChatApp: Application() {
     override fun onCreate() {
         super.onCreate()
         try {
-            Amplify.addPlugin(AWSApiPlugin())
             Amplify.addPlugin(AWSDataStorePlugin())
+            Amplify.addPlugin(AWSApiPlugin())
             Amplify.addPlugin(AWSCognitoAuthPlugin())
             Amplify.configure(applicationContext)
 
