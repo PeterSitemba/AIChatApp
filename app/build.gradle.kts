@@ -14,8 +14,8 @@ android {
         applicationId = "com.bootsnip.aichat"
         minSdk = 24
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.0.1-alpha"
+        versionCode = 4
+        versionName = "1.0.2-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
