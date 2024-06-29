@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -55,6 +57,8 @@ fun PurchaseSubscriptionScreen(
         width = 2.dp,
         color = Purple80
     )
+    
+    val scrollState = rememberScrollState()
 
     val buttonColors = ButtonDefaults.outlinedButtonColors(
         containerColor = DarkGrey,
@@ -66,9 +70,10 @@ fun PurchaseSubscriptionScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
-                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                .padding(start = 16.dp, end = 16.dp, bottom = 94.dp)
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
+                .verticalScroll(scrollState)
         ) {
 
             Icon(
