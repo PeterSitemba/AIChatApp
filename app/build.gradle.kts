@@ -14,8 +14,8 @@ android {
         applicationId = "com.bootsnip.aichat"
         minSdk = 24
         targetSdk = 34
-        versionCode = 5
-        versionName = "1.0.3-alpha"
+        versionCode = 6
+        versionName = "1.0.4-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -131,4 +131,7 @@ dependencies {
     implementation(libs.accompanist.permissions)
 
     implementation(libs.androidx.core.splashscreen)
+
+    //billing
+    implementation(libs.billing)
 }

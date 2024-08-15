@@ -23,6 +23,7 @@ compose-navigation = "2.7.7"
 amplify = "2.19.0"
 desugar-jdk-libs = "2.0.4"
 coil = "2.6.0"
+billing = "7.0.0"
 
 [libraries]
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist-permissions" }
@@ -84,5 +85,7 @@ amplify-kotlin = { module = "com.amplifyframework:core-kotlin", version.ref = "a
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar-jdk-libs" }
 
 coil = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+
+billing = { module = "com.android.billingclient:billing-ktx", version.ref = "billing"}
 
 [plugins]
